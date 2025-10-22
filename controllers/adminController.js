@@ -1,5 +1,5 @@
 const generateToken = require("../config/utils")
-const Admin = require("../models/AdminSchema")
+const Admin = require("../models/adminSchema")
 const bcrypt = require('bcryptjs')
 
 const adminRegister = async (req, res) => {

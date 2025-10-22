@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 const dotenv = require('dotenv')
-const Admin = require('../models/AdminSchema')
+const Admin = require('../models/adminSchema')
 dotenv.config()
 
 const protectRoute = async (req, res, next) => {
