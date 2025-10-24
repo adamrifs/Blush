@@ -1,4 +1,6 @@
 const cloudinary = require('cloudinary');
+const xlsx = require('xlsx');
+const fs = require('fs');
 const Product = require('../models/productSchema');
 
 const addProduct = async (req, res) => {
@@ -152,4 +154,51 @@ const deleteProduct = async (req, res) => {
     }
 }
 
-module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct }
+
+const bulkUploadProducts = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        // Read Excel file
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        // Clean up the uploaded file
+        fs.unlinkSync(req.file.path);
+
+        // Validate the data
+        if (!sheetData || sheetData.length === 0) {
+            return res.status(400).json({ message: 'Excel file is empty or invalid' });
+        }
+
+        // Map Excel rows to Product model
+        const products = sheetData.map((row) => ({
+            name: row.name,
+            price: Number(row.price),
+            stock: Number(row.stock),
+            description: row.description,
+            occasions: row.occasions || "General",
+            category: row.category,
+            image: row.image ? [row.image] : [], // can include image URLs if given
+            addons: row.addons
+                ? JSON.parse(row.addons) // if you export as JSON string in Excel
+                : [],
+        }));
+
+        // Bulk insert into MongoDB
+        await Product.insertMany(products);
+
+        res.status(200).json({
+            message: `${products.length} products uploaded successfully`,
+            count: products.length,
+        });
+    } catch (error) {
+        console.error('Error in bulkUploadProducts:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct ,bulkUploadProducts }
