@@ -30,15 +30,29 @@ const productSchema = new mongoose.Schema({
     category: {
         type: String,
         enum: [
+            "Bouquet",
+            "Bouquet in Bag",
+            "Box Arrangements",
             "Cake",
-            "Flower",
-            "Gift",
+            "Cakes and Flowers",
             "Chocolate",
-            "Combo",
-            "Other"
+            "Chocolate and Flowers",
+            "Combo Deals",
+            "Flowers",
+            "Forever Flowers",
+            "Fresh Cakes",
+            "Flower Basket",
+            "Fruits and Flowers",
+            "Hand Bouquet",
+            "Mini Bag Arrangements",
+            "Mini Bouquet",
+            "Necklace",
+            "Plants",
+            "Vase Arrangements"
         ],
         required: true
     }
+
 }, { timestamps: true }
 )
 const Product = mongoose.model('Product', productSchema)
