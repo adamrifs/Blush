@@ -4,13 +4,15 @@ const dotenv = require('dotenv')
 const connectDB = require('./config/db.js')
 const adminRoutes = require('./routes/adminRoutes.js')
 const productRoutes = require('./routes/productRoutes.js')
+const userRoutes = require('./routes/userRoutes.js')
+const cartRoutes = require('./routes/cartRoutes.js')
 const connectCloudinary = require('./config/cloudinary.js')
 const cookieParser = require('cookie-parser');
 dotenv.config()
 
 const app = express()
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174','https://blush-beige.vercel.app', 'https://blush-adminpannel.vercel.app'],
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'https://blush-beige.vercel.app', 'https://blush-adminpannel.vercel.app'],
     credentials: true
 }))
 app.use(express.json())
@@ -22,6 +24,8 @@ connectCloudinary()
 
 app.use('/api/admin', adminRoutes)
 app.use('/api/product', productRoutes)
+app.use('/api/user', userRoutes)
+app.use('/api/cart',cartRoutes)
 const port = process.env.PORT
 
 app.listen(port, () => {
