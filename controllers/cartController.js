@@ -69,9 +69,9 @@ const mergeCart = async (req, res) => {
             await guestCart.save()
         } else {
             guestCart.items.forEach((guestItem) => {
-                const existingProducts = userCart.items.find((item) => item.productId.toString() === guestItem.productId.toString())
+                const existingProducts = userCart.items.find((item) => item.productId.toString() === guestItem.productId._id.toString())
                 if (existingProducts) {
-                    userCart.items.quantity += guestItem.quantity
+                    existingProducts.quantity += guestItem.quantity
                 } else {
                     userCart.items.push(guestItem)
                 }
@@ -85,6 +85,7 @@ const mergeCart = async (req, res) => {
         console.log(error)
     }
 }
+
 const removeFromCart = async (req, res) => {
     try {
         const { productId, sessionId } = req.body
@@ -123,4 +124,4 @@ const updateQuantity = async (req, res) => {
     }
 }
 
-module.exports = { addToCart, getCart, mergeCart, removeFromCart , updateQuantity}
+module.exports = { addToCart, getCart, mergeCart, removeFromCart, updateQuantity }
