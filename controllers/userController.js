@@ -47,7 +47,7 @@ const loginUser = async (req, res) => {
         if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
         // generate and send token
-        generateToken(user._id, res);
+        const token = generateToken(user._id, res);
 
         res.status(200).json({
             message: 'Login successful',
@@ -56,7 +56,8 @@ const loginUser = async (req, res) => {
                 firstname: user.firstname,
                 lastname: user.lastname,
                 email: user.email
-            }
+            },
+            token
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
