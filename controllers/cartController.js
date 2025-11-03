@@ -55,36 +55,44 @@ const getCart = async (req, res) => {
 
 const mergeCart = async (req, res) => {
     try {
-        const { sessionId } = req.body
-        const userId = req.user._id
+        const { sessionId } = req.body;
+        const userId = req.user._id;
 
-        const guestCart = await Cart.findOne({ sessionId })
-        const userCart = await Cart.findOne({ userId })
+        const guestCart = await Cart.findOne({ sessionId });
+        const userCart = await Cart.findOne({ userId });
 
-        if (!guestCart) return res.status(200).json({ message: 'No guest cart found' });
+        if (!guestCart) return res.status(200).json({ message: "No guest cart found" });
 
         if (!userCart) {
             guestCart.userId = userId;
-            guestCart.sessionId = null
-            await guestCart.save()
+            guestCart.sessionId = null;
+            await guestCart.save();
         } else {
             guestCart.items.forEach((guestItem) => {
-                const existingProducts = userCart.items.find((item) => item.productId.toString() === guestItem.productId._id.toString())
+                const existingProducts = userCart.items.find((item) => {
+                    const userProdId = item.productId._id ? item.productId._id.toString() : item.productId.toString();
+                    const guestProdId = guestItem.productId._id ? guestItem.productId._id.toString() : guestItem.productId.toString();
+                    return userProdId === guestProdId;
+                });
+
                 if (existingProducts) {
-                    existingProducts.quantity += guestItem.quantity
+                    existingProducts.quantity += guestItem.quantity;
                 } else {
-                    userCart.items.push(guestItem)
+                    userCart.items.push(guestItem);
                 }
-            })
-            await userCart.save()
-            await guestCart.deleteOne()
+            });
+
+            await userCart.save();
+            await guestCart.deleteOne();
         }
-        res.status(200).json({ message: 'Cart merged successfully' });
+
+        res.status(200).json({ message: "Cart merged successfully" });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: error.message });
-        console.log(error)
     }
-}
+};
+
 
 const removeFromCart = async (req, res) => {
     try {
