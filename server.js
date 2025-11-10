@@ -8,6 +8,8 @@ const userRoutes = require('./routes/userRoutes.js')
 const cartRoutes = require('./routes/cartRoutes.js')
 const connectCloudinary = require('./config/cloudinary.js')
 const cookieParser = require('cookie-parser');
+const passport = require("passport");
+require("./config/passport.js");
 dotenv.config()
 
 const app = express()
@@ -18,6 +20,8 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 app.use('/uploads', express.static('uploads'));
+app.use(passport.initialize());
+app.use(passport.session());
 
 connectDB()
 connectCloudinary()
