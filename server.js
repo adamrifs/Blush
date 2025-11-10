@@ -1,6 +1,5 @@
 const express = require('express')
 const cors = require('cors')
-const dotenv = require('dotenv')
 const connectDB = require('./config/db.js')
 const adminRoutes = require('./routes/adminRoutes.js')
 const productRoutes = require('./routes/productRoutes.js')
@@ -8,9 +7,10 @@ const userRoutes = require('./routes/userRoutes.js')
 const cartRoutes = require('./routes/cartRoutes.js')
 const connectCloudinary = require('./config/cloudinary.js')
 const cookieParser = require('cookie-parser');
+const dotenv = require('dotenv')
+dotenv.config()
 const passport = require("passport");
 require("./config/passport.js");
-dotenv.config()
 
 const app = express()
 app.use(cors({

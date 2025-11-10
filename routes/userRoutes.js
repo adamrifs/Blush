@@ -3,13 +3,17 @@ const { registerUser, loginUser, logoutUser, getUser } = require('../controllers
 const protectRoute = require('../middleware/authMiddleware.js')
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
+const dotenv = require('dotenv');
+dotenv.config();
 
 const router = express.Router();
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // google authentication 
 router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"], session: false })
+    "/google",
+    passport.authenticate("google", { scope: ["profile", "email"], session: false })
 );
 router.get(
     "/google/callback",
