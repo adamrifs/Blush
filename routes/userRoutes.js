@@ -10,12 +10,15 @@ const router = express.Router();
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 router.get(
     "/google/callback",
-    passport.authenticate("google", { failureRedirect: "/" }),
+    passport.authenticate("google", { session: false, failureRedirect: "/" }),
     (req, res) => {
-        // ✅ use your existing generateToken function
-        const token = generateToken(req.user._id, res);
-
-        // your generateToken already sets the cookie, so no need to call res.cookie again
+        const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+        res.cookie("authToken", token, {
+            httpOnly: true,
+            sameSite: "none",
+            secure: true,
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
         res.redirect(`${process.env.CLIENT_URL}/dashboard`);
     }
 );
