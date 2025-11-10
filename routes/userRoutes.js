@@ -30,6 +30,50 @@ router.get(
     }
 );
 
+router.post("/google-login", async (req, res) => {
+    try {
+        const { token } = req.body;
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        console.log("✅ Google user verified:", payload);
+
+        // Check if user exists
+        let user = await require("../models/userSchema.js").findOne({ email: payload.email });
+        if (!user) {
+            user = await require("../models/userSchema.js").create({
+                firstname: payload.given_name,
+                lastname: payload.family_name,
+                email: payload.email,
+                googleId: payload.sub,
+            });
+        }
+
+        // Generate JWT
+        const authToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+        res.cookie("authToken", authToken, {
+            httpOnly: true,
+            sameSite: "none",
+            secure: true,
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(200).json({
+            message: "Google login successful",
+            token: authToken,
+            user,
+        });
+    } catch (error) {
+        console.error("❌ Google login error:", error);
+        res.status(400).json({ message: "Google login failed" });
+    }
+});
+
+
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/logout', logoutUser);
