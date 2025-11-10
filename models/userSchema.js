@@ -4,8 +4,14 @@ const userSchema = new mongoose.Schema({
     firstname: { type: String, required: true },
     lastname: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-},{timestamps:true})
+    password: {
+        type: String,
+        required: function () {
+            return !this.googleId; // ✅ No password needed for Google users
+        },
+    },
+    googleId: { type: String },
+}, { timestamps: true })
 
-const User = mongoose.model('user',userSchema)
-module.exports= User
+const User = mongoose.model('user', userSchema)
+module.exports = User
