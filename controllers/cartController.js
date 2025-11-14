@@ -38,20 +38,22 @@ const addToCart = async (req, res) => {
 
 const getCart = async (req, res) => {
     try {
-        const userId = req.user ? user._id : null
-        const { sessionId } = req.query
+        const userId = req.user ? req.user._id : null;
+        const { sessionId } = req.query;
 
-        const cart = await Cart.findOne(userId ? { userId } : { sessionId })
-            .populate('items.productId', 'name price image description')
+        const cart = await Cart.findOne(
+            userId ? { userId } : { sessionId }
+        ).populate("items.productId", "name price image description");
 
         if (!cart) return res.json({ items: [] });
         res.status(200).json(cart);
 
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 const mergeCart = async (req, res) => {
     try {
