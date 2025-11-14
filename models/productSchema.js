@@ -13,6 +13,7 @@ const productSchema = new mongoose.Schema({
     occasions: {
         type: String,
         enum: [
+            "General",
             "Mother's Day",
             "Valentine's Day",
             "Eid",
