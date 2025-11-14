@@ -5,7 +5,10 @@ const Product = require('../models/productSchema');
 
 const addProduct = async (req, res) => {
     try {
-        const { name, price, stock, description, occasions, category, addons } = req.body;
+        const {
+            name, price, stock, description, occasions, category, addons,
+            availableIn   // ⭐ NEW FIELD
+        } = req.body;
 
         if (!name || !price || !stock || !description || !occasions || !category) {
             return res.status(400).json({ message: 'All fields are required' });
@@ -15,18 +18,19 @@ const addProduct = async (req, res) => {
             return res.status(400).json({ message: 'At least one image is required' });
         }
 
+        // Upload product images
         let imageUrls = await Promise.all(
             req.files.map(async (file) => {
                 const result = await cloudinary.uploader.upload(file.path, {
                     folder: 'products',
                 });
-                return result.secure_url
+                return result.secure_url;
             })
-        )
+        );
 
         let addonsArray = addons ? JSON.parse(addons) : [];
 
-        // 3️⃣ Upload addon images if they exist
+        // Upload addon images
         if (req.files.some(f => f.fieldname.startsWith('addonImage'))) {
             addonsArray = await Promise.all(
                 addonsArray.map(async (addon, index) => {
@@ -40,6 +44,13 @@ const addProduct = async (req, res) => {
             );
         }
 
+        // ⭐ Convert availableIn into array (incoming may be string)
+        const emiratesArray = availableIn
+            ? (Array.isArray(availableIn) ? availableIn : JSON.parse(availableIn))
+            : [
+                "Abu Dhabi", "Dubai", "Sharjah", "Ajman", "Umm Al Quwain",
+                "Ras Al Khaimah", "Fujairah", "Al Ain"
+            ];
 
         const newProduct = new Product({
             name,
@@ -49,18 +60,24 @@ const addProduct = async (req, res) => {
             occasions,
             category,
             addons: addonsArray,
-            image: imageUrls
-        })
-        await newProduct.save()
+            image: imageUrls,
+
+            // ⭐ ADD HERE
+            availableIn: emiratesArray
+        });
+
+        await newProduct.save();
+
         res.status(200).json({
             message: 'Product added successfully',
             product: newProduct,
         });
     } catch (error) {
-        console.log(error, 'error occured on addProduct')
-        res.status(500).json({ message: error.message })
+        console.log(error, 'error on addProduct');
+        res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 const getProduct = async (req, res) => {
     try {
@@ -88,24 +105,31 @@ const singleProduct = async (req, res) => {
 
 const editProduct = async (req, res) => {
     try {
-        const { name, price, description, stock, occasions, category, addons } = req.body
-        const { id } = req.params
+        const { name, price, description, stock, occasions, category, addons, availableIn } = req.body;
+        const { id } = req.params;
 
-        const product = await Product.findById(id)
+        const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
-        if (name) product.name = name
-        if (price) product.price = price
-        if (description) product.description = description
-        if (stock) product.stock = stock
-        if (category) product.category = category
-        if (occasions) product.occasions = occasions
+        if (name) product.name = name;
+        if (price) product.price = price;
+        if (description) product.description = description;
+        if (stock) product.stock = stock;
+        if (category) product.category = category;
+        if (occasions) product.occasions = occasions;
+
+        // ⭐ Update emirates availability
+        if (availableIn) {
+            product.availableIn = Array.isArray(availableIn)
+                ? availableIn
+                : JSON.parse(availableIn);
+        }
 
         let addonsArray = addons ? (typeof addons === 'string' ? JSON.parse(addons) : addons) : product.addons;
 
-        // Upload addon images if any
+        // addon image upload
         if (req.files && req.files.length > 0) {
             for (let i = 0; i < addonsArray.length; i++) {
                 const file = req.files.find(f => f.fieldname === `addonImage_${i}`);
@@ -117,31 +141,34 @@ const editProduct = async (req, res) => {
         }
 
         product.addons = addonsArray;
+
+        // product images
         if (req.files && req.files.length > 0) {
             const uploadedImages = await Promise.all(
                 req.files.map((file) => {
-                    return cloudinary.uploader.upload(file.path, {
-                        folder: 'products'
-                    })
+                    return cloudinary.uploader.upload(file.path, { folder: 'products' });
                 })
-            )
+            );
 
             product.image = uploadedImages.map((img) => ({
                 url: img.secure_url,
                 public_id: img.public_id
-            }))
+            }));
         }
-        await product.save()
+
+        await product.save();
+
         res.status(200).json({
             success: true,
             message: "Product updated successfully",
             product,
         });
     } catch (error) {
-        console.log(error, 'error occured on editProduct')
+        console.log(error, 'error at editProduct')
         res.status(500).json({ message: error.message })
     }
-}
+};
+
 
 const deleteProduct = async (req, res) => {
     try {
@@ -161,20 +188,16 @@ const bulkUploadProducts = async (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        // Read Excel file
         const workbook = xlsx.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
         const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-        // Clean up the uploaded file
         fs.unlinkSync(req.file.path);
 
-        // Validate the data
         if (!sheetData || sheetData.length === 0) {
             return res.status(400).json({ message: 'Excel file is empty or invalid' });
         }
 
-        // Map Excel rows to Product model
         const products = sheetData.map((row) => ({
             name: row.name,
             price: Number(row.price),
@@ -182,13 +205,19 @@ const bulkUploadProducts = async (req, res) => {
             description: row.description,
             occasions: row.occasions || "General",
             category: row.category,
-            image: row.image ? [row.image] : [], // can include image URLs if given
+
+            // ⭐ Improved trimming
+            availableIn: row.availableIn
+                ? row.availableIn.split(',').map(e => e.trim())
+                : [],
+
+            image: row.image ? [row.image] : [],
+
             addons: row.addons
-                ? JSON.parse(row.addons) // if you export as JSON string in Excel
+                ? JSON.parse(row.addons)
                 : [],
         }));
 
-        // Bulk insert into MongoDB
         await Product.insertMany(products);
 
         res.status(200).json({
@@ -201,4 +230,76 @@ const bulkUploadProducts = async (req, res) => {
     }
 };
 
-module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct ,bulkUploadProducts }
+const getProductsByEmirate = async (req, res) => {
+    try {
+        const emirate = req.query.emirate
+        if (!emirate) return res.status(400).json({ message: "emirate query required" })
+
+        // find products that list this emirate in availableIn
+        const products = await Product.find({ availableIn: emirate })
+        res.json({ products })
+    } catch (error) {
+        console.error('Error in getProductsByEmirate:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+}
+
+const checkCartAvailability = async (req, res) => {
+    try {
+        const { cartItems, emirate } = req.body
+        if (!cartItems || !Array.isArray(cartItems) || !emirate) {
+            return res.status(400).json({ message: "cartItems (array) and emirate required" })
+        }
+
+        // Find all product ids in one query
+        const ids = cartItems.map(i => i.productId)
+        const products = await Product.find({ _id: { $in: ids } })
+
+        // Map products for quick lookup
+        const prodMap = {}
+        products.forEach(p => prodMap[p._id.toString()] = p)
+
+        // Check availability per cart item
+        const availability = cartItems.map(item => {
+            const p = prodMap[item.productId]
+            if (!p) {
+                return { productId: item.productId, available: false, reason: "Not found" }
+            }
+            // check emirate availability and stock
+            const availableInEmirate = (p.availableIn || []).includes(emirate)
+            const enoughStock = (p.stock >= (item.quantity || 1))
+            return {
+                productId: item.productId,
+                available: availableInEmirate && enoughStock,
+                availableInEmirate,
+                enoughStock,
+                name: p.name,
+                stock: p.stock
+            }
+        })
+
+        const anyUnavailable = availability.some(a => !a.available)
+
+        // Delivery charge rules
+        // Abu Dhabi => 30 AED + VAT ; others => 60 AED + VAT
+        const baseDelivery = (emirate.toLowerCase() === 'abu dhabi') ? 30 : 60
+        const vat = 0.05
+        const deliveryWithVat = +(baseDelivery * (1 + vat)).toFixed(2)
+
+        res.json({
+            availability,
+            allAvailable: !anyUnavailable,
+            delivery: {
+                base: baseDelivery,
+                vatPercent: vat * 100,
+                total: deliveryWithVat
+            }
+        })
+
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: "server error" })
+    }
+}
+
+module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability }

@@ -6,6 +6,10 @@ const productSchema = new mongoose.Schema({
     stock: { type: Number, required: true },
     image: { type: Array },
     description: { type: String, required: true },
+    availableIn: {
+        type: [String],
+        default: ["Abu Dhabi", "Dubai", "Sharjah", "Ajman", "Umm Al Quwain", "Ras Al Khaimah", "Fujairah", "Al Ain"]
+    },
     occasions: {
         type: String,
         enum: [

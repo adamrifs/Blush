@@ -49,6 +49,7 @@ router.post("/google-login", async (req, res) => {
                 lastname: payload.family_name,
                 email: payload.email,
                 googleId: payload.sub,
+                 profileImage: payload.picture,
             });
         }
 

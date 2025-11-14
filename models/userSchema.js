@@ -10,6 +10,10 @@ const userSchema = new mongoose.Schema({
             return !this.googleId; // ✅ No password needed for Google users
         },
     },
+    profileImage: {
+        type: String,
+        default: "",
+    },
     googleId: { type: String },
 }, { timestamps: true })
 
