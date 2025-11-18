@@ -5,6 +5,7 @@ const adminRoutes = require('./routes/adminRoutes.js')
 const productRoutes = require('./routes/productRoutes.js')
 const userRoutes = require('./routes/userRoutes.js')
 const cartRoutes = require('./routes/cartRoutes.js')
+const addressRoutes = require('./routes/addressRoutes.js')
 const connectCloudinary = require('./config/cloudinary.js')
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv')
@@ -30,6 +31,7 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/product', productRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/cart',cartRoutes)
+app.use('/api/address',addressRoutes)
 const port = process.env.PORT
 
 app.listen(port, () => {
