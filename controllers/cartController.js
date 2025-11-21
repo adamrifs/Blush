@@ -113,6 +113,28 @@ const removeFromCart = async (req, res) => {
         console.log(error)
     }
 }
+
+const clearCart = async (req, res) => {
+    try {
+        const userId = req.user ? req.user._id : null;
+        const { sessionId } = req.body;
+
+        // Find the cart
+        const cart = await Cart.findOne(userId ? { userId } : { sessionId });
+        if (!cart) return res.status(200).json({ message: "Cart already empty" });
+
+        // Clear items
+        cart.items = [];
+        await cart.save();
+
+        res.status(200).json({ message: "Cart cleared successfully", cart });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: "Failed to clear cart" });
+    }
+};
+
+
 const updateQuantity = async (req, res) => {
     try {
         const { productId, sessionId, quantity } = req.body
@@ -134,4 +156,4 @@ const updateQuantity = async (req, res) => {
     }
 }
 
-module.exports = { addToCart, getCart, mergeCart, removeFromCart, updateQuantity }
+module.exports = { addToCart, getCart, mergeCart, removeFromCart, updateQuantity ,clearCart}
