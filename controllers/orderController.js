@@ -26,16 +26,12 @@ exports.getUserOrders = async (req, res) => {
     try {
         const userId = req.params.userId;
 
-        const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+        const orders = await Order.find({ userId })
+            .populate("items.productId", "name price image description category");
 
-        res.status(200).json({
-            success: true,
-            orders
-        });
-
+        res.status(200).json({ orders });
     } catch (error) {
-        console.log("GET USER ORDERS ERROR:", error);
-        res.status(500).json({ success: false, message: "Failed to fetch orders" });
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -44,14 +40,12 @@ exports.getUserOrders = async (req, res) => {
 // ----------------------------------------------------------
 exports.getOrderById = async (req, res) => {
     try {
-        const order = await Order.findById(req.params.id);
+        const order = await Order.findById(req.params.id)
+            .populate("items.productId", "name price image description category");
 
-        if (!order) return res.status(404).json({ success: false, message: "Order not found" });
-
-        res.status(200).json({ success: true, order });
-
+        res.status(200).json({ order });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Failed to fetch order" });
+        res.status(500).json({ message: error.message });
     }
 };
 
