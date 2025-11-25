@@ -2,39 +2,67 @@ const Cart = require("../models/cartSchema");
 
 const addToCart = async (req, res) => {
     try {
-        const { productId, quantity, addons, sessionId } = req.body
-        const userId = req.user ? req.user._id : null
+        const { productId, quantity, addons, sessionId } = req.body;
+        const userId = req.user ? req.user._id : null;
 
-        let cart;
-        if (userId) {
-            cart = await Cart.findOne({ userId })
-        } else {
-            cart = await Cart.findOne({ sessionId })
-        }
+        // Fetch product base price
+        const product = await Product.findById(productId).select("price");
+        if (!product) return res.status(404).json({ message: "Product not found" });
+
+        const basePrice = product.price;
+        const vatAmount = Number((basePrice * 0.05).toFixed(2));
+        const priceWithVAT = Number((basePrice + vatAmount).toFixed(2));
+
+        // Find cart
+        let cart = userId
+            ? await Cart.findOne({ userId })
+            : await Cart.findOne({ sessionId });
 
         if (!cart) {
             cart = new Cart({
                 userId,
                 sessionId,
-                items: [{ productId, quantity, addons }]
-            })
+                items: [{
+                    productId,
+                    quantity,
+                    addons,
+                    basePrice,
+                    vatAmount,
+                    priceWithVAT
+                }]
+            });
         } else {
-            const existingCartIndex = cart.items.findIndex((item) => item.productId.toString() === productId)
-            if (existingCartIndex > -1) {
-                cart.items[existingCartIndex].quantity += quantity
+            const index = cart.items.findIndex(
+                item => item.productId.toString() === productId
+            );
+
+            if (index > -1) {
+                cart.items[index].quantity += quantity;
             } else {
-                cart.items.push({ productId, quantity, addons })
+                cart.items.push({
+                    productId,
+                    quantity,
+                    addons,
+                    basePrice,
+                    vatAmount,
+                    priceWithVAT
+                });
             }
         }
 
-        await cart.save()
-        res.status(200).json({ message: 'Item added to cart', cart });
+        await cart.save();
+
+        return res.status(200).json({
+            message: "Item added to cart with VAT applied",
+            cart
+        });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
-        console.log(error)
+        console.log(error);
+        return res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 const getCart = async (req, res) => {
     try {
@@ -156,4 +184,4 @@ const updateQuantity = async (req, res) => {
     }
 }
 
-module.exports = { addToCart, getCart, mergeCart, removeFromCart, updateQuantity ,clearCart}
+module.exports = { addToCart, getCart, mergeCart, removeFromCart, updateQuantity, clearCart }
