@@ -28,7 +28,7 @@ exports.createOrder = async (req, res) => {
         await order.save();
 
 
-        const Admin = require("../models/adminModel");
+        const Admin = require("../models/adminSchema");
         let admin = await Admin.findOne();
 
         // If no admin found, create one to prevent errors
