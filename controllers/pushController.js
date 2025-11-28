@@ -1,5 +1,6 @@
 const webPush = require("web-push");
 const User = require("../models/userSchema"); // same as your file
+const Admin = require("../models/adminSchema");
 
 // ===============================
 //  CONFIGURE VAPID KEYS
@@ -64,5 +65,26 @@ exports.testNotification = async (req, res) => {
   } catch (err) {
     console.log("Push test error:", err);
     res.status(500).json({ message: "Failed to send test push" });
+  }
+};
+
+// Admin push subscribe
+exports.subscribeAdmin = async (req, res) => {
+  try {
+    const { subscription } = req.body;
+
+    let admin = await Admin.findOne();
+    if (!admin) {
+      admin = new Admin({ subscription });
+    } else {
+      admin.subscription = subscription;
+    }
+
+    await admin.save();
+
+    res.status(201).json({ success: true, message: "Admin subscribed" });
+  } catch (err) {
+    console.log("Admin push error:", err);
+    res.status(500).json({ message: "Failed to save admin subscription" });
   }
 };
