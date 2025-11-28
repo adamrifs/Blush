@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
         default: "",
     },
     googleId: { type: String },
+    subscription: { type: Object, default: null },
 }, { timestamps: true })
 
 const User = mongoose.model('user', userSchema)

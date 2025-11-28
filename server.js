@@ -8,6 +8,7 @@ const cartRoutes = require('./routes/cartRoutes.js')
 const addressRoutes = require('./routes/addressRoutes.js')
 const paymobRoutes = require("./routes/paymobRoutes.js");
 const orderRoutes = require('./routes/orderRoutes.js');
+const pushRoutes = require('./routes/pushRoutes.js')
 const connectCloudinary = require('./config/cloudinary.js')
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv')
@@ -36,6 +37,7 @@ app.use('/api/cart',cartRoutes)
 app.use('/api/address',addressRoutes)
 app.use("/api/payment/paymob", paymobRoutes);
 app.use('/api/orders', orderRoutes);
+app.use("/api/push", pushRoutes);
 const port = process.env.PORT
 
 app.listen(port, () => {
