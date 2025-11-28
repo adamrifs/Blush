@@ -1,9 +1,15 @@
 const express = require("express");
 const router = express.Router();
 
-const { subscribeUser } = require("../controllers/pushController");
+const {
+  subscribeUser,
+  testNotification
+} = require("../controllers/pushController");
 
-// Save subscription route
+// save subscription
 router.post("/subscribe", subscribeUser);
+
+// test push manually
+router.get("/test/:userId", testNotification);
 
 module.exports = router;
