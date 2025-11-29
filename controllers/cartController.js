@@ -11,8 +11,6 @@ const addToCart = async (req, res) => {
         if (!product) return res.status(404).json({ message: "Product not found" });
 
         const basePrice = product.price;
-        const vatAmount = Number((basePrice * 0.05).toFixed(2));
-        const priceWithVAT = Number((basePrice + vatAmount).toFixed(2));
 
         // Find cart
         let cart = userId
@@ -27,9 +25,7 @@ const addToCart = async (req, res) => {
                     productId,
                     quantity,
                     addons,
-                    basePrice,
-                    vatAmount,
-                    priceWithVAT
+                     basePrice  
                 }]
             });
         } else {

@@ -8,12 +8,7 @@ const cartSchema = new mongoose.Schema({
             productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
             quantity: { type: Number, default: 1 },
             addons: [{ name: String, price: Number, image: String }],
-
-            // VAT fields
-            basePrice: { type: Number },       // product.price from DB
-            vatAmount: { type: Number },       // 5% VAT of base price
-            priceWithVAT: { type: Number }     // final amount to be billed
-
+            basePrice: { type: Number }, 
         }
     ],
 }, { timestamps: true })
