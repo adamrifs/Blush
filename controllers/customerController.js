@@ -1,7 +1,5 @@
 const User = require("../models/userSchema");
 const Order = require('../models/orderSchema')
-const User = require("../models/userModel");
-const Order = require("../models/orderModel");
 
 exports.getCustomers = async (req, res) => {
     try {
