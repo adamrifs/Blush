@@ -1,27 +1,33 @@
 const User = require("../models/userSchema");
 const Order = require('../models/orderSchema')
+const User = require("../models/userModel");
+const Order = require("../models/orderModel");
+
 exports.getCustomers = async (req, res) => {
     try {
         const users = await User.find().sort({ createdAt: -1 });
 
-        const customersWithOrders = await Promise.all(
+        const results = await Promise.all(
             users.map(async (u) => {
-                const ordersCount = await Order.countDocuments({ userId: u._id });
+                const orderCount = await Order.countDocuments({ userId: u._id });
+
+                const fullName =
+                    [u.firstname, u.lastname].filter(Boolean).join(" ") || "—";
 
                 return {
                     _id: u._id,
-                    name: u.name,
+                    name: fullName,
                     email: u.email,
                     phone: u.phone || "—",
-                    createdAt: u.createdAt,
-                    totalOrders: ordersCount,
+                    totalOrders: orderCount,
+                    createdAt: u.createdAt
                 };
             })
         );
 
-        res.json({ customers: customersWithOrders });
+        res.json({ customers: results });
     } catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ message: "Server error" });
     }
 };
