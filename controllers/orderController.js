@@ -96,6 +96,20 @@ exports.getOrderById = async (req, res) => {
     }
 };
 
+exports.getOrdersByCustomer = async (req, res) => {
+    try {
+        const customerId = req.params.id;
+
+        const orders = await Order.find({ userId: customerId })
+            .sort({ createdAt: -1 })
+            .populate("items.productId", "name price image description category");
+
+        res.status(200).json({ success: true, orders });
+    } catch (err) {
+        console.log("Get Orders By Customer Error:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
 // ===============================
 // GET USER ORDERS
 // ===============================

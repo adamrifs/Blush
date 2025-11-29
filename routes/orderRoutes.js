@@ -8,13 +8,15 @@ const {
     getUserOrders,
     getOrderById,
     getAllOrders,
-    updateOrderStatus
+    updateOrderStatus,
+    getOrdersByCustomer
 } = require("../controllers/orderController");
 
 // USER ROUTES
 router.post("/create", createOrder);
 router.get("/user/:userId", getUserOrders);
 router.get("/:id", getOrderById);
+router.get("/byCustomer/:id", getOrdersByCustomer);
 
 // ADMIN ROUTES (protected)
 router.get("/admin/all", protectRoute, getAllOrders);
