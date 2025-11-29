@@ -25,7 +25,7 @@ const addToCart = async (req, res) => {
                     productId,
                     quantity,
                     addons,
-                     basePrice  
+                    basePrice
                 }]
             });
         } else {
@@ -41,14 +41,11 @@ const addToCart = async (req, res) => {
                     quantity,
                     addons,
                     basePrice,
-                    vatAmount,
-                    priceWithVAT
                 });
             }
         }
 
         await cart.save();
-
         return res.status(200).json({
             message: "Item added to cart with VAT applied",
             cart
