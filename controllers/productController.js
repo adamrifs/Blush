@@ -230,6 +230,23 @@ const bulkUploadProducts = async (req, res) => {
     }
 };
 
+exports.bulkDeleteProducts = async (req, res) => {
+    try {
+        const { ids } = req.body;
+
+        if (!ids || !Array.isArray(ids)) {
+            return res.status(400).json({ message: "Invalid request. 'ids' must be an array." });
+        }
+
+        await Product.deleteMany({ _id: { $in: ids } });
+
+        res.json({ message: "Products deleted successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
 const getProductsByEmirate = async (req, res) => {
     try {
         const emirate = req.query.emirate
