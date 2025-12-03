@@ -6,21 +6,29 @@ dotenv.config()
 const protectRoute = async (req, res, next) => {
     try {
         const token = req.cookies.jwt;
+
         if (!token) {
-            return res.status(500).json({ message: 'token required' })
+            return res.status(401).json({ message: "No token, authorization denied" });
         }
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
         if (!decoded) {
-            return res.status(500).json({ message: 'unauthorized login' })
+            return res.status(401).json({ message: "Invalid token" });
         }
-        const admin = await Admin.findById(decoded.id).select('-password')
+
+        const admin = await Admin.findById(decoded.id).select("-password");
+
         if (!admin) {
-            res.status(400).json({ message: 'admin not found' })
+            return res.status(404).json({ message: "Admin not found" });
         }
-        req.admin = admin
-        next()
+
+        req.admin = admin;
+        next();
     } catch (error) {
-        console.log(error, 'error occured on protectRoute')
+        console.log("Error in protectRoute:", error);
+        res.status(401).json({ message: "Authorization failed" });
     }
-}
+};
+
 module.exports = protectRoute
