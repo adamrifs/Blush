@@ -230,7 +230,7 @@ const bulkUploadProducts = async (req, res) => {
     }
 };
 
-exports.bulkDeleteProducts = async (req, res) => {
+const bulkDeleteProducts = async (req, res) => {
     try {
         const { ids } = req.body;
 
@@ -319,4 +319,4 @@ const checkCartAvailability = async (req, res) => {
     }
 }
 
-module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability }
+module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability, bulkDeleteProducts }
