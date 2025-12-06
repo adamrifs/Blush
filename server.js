@@ -10,12 +10,15 @@ const paymobRoutes = require("./routes/paymobRoutes.js");
 const orderRoutes = require('./routes/orderRoutes.js');
 const pushRoutes = require('./routes/pushRoutes.js')
 const customerRoutes = require('./routes/customerRoutes.js')
+const settingsRoutes = require('./routes/settingsRoutes.js')
 const connectCloudinary = require('./config/cloudinary.js')
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv')
 dotenv.config()
 const passport = require("passport");
 require("./config/passport.js");
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express()
 app.use(cors({
@@ -34,12 +37,35 @@ connectCloudinary()
 app.use('/api/admin', adminRoutes)
 app.use('/api/product', productRoutes)
 app.use('/api/user', userRoutes)
-app.use('/api/cart',cartRoutes)
-app.use('/api/address',addressRoutes)
+app.use('/api/cart', cartRoutes)
+app.use('/api/address', addressRoutes)
 app.use("/api/payment/paymob", paymobRoutes);
 app.use('/api/orders', orderRoutes);
 app.use("/api/push", pushRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/settings', settingsRoutes);
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: true, credentials: true } // allow your frontend origin(s)
+});
+
+// Make io accessible in controllers via app.locals
+app.locals.io = io;
+
+// (Optional) simple auth for socket: you can expand later
+io.on('connection', (socket) => {
+    console.log('socket connected:', socket.id);
+
+    // join admin room if client sends adminId
+    socket.on('join-admin', (adminId) => {
+        socket.join(`admin_${adminId}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('socket disconnected', socket.id);
+    });
+});
 
 const port = process.env.PORT
 
