@@ -4,6 +4,7 @@ const User = require("../models/userSchema");
 const webPush = require("web-push");
 const AdminSettings = require('../models/AdminSettings');
 const { sendEmail } = require('../config/emailSender');
+const Admin = require("../models/adminSchema");
 // VAPID CONFIG
 
 webPush.setVapidDetails(
