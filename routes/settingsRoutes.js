@@ -1,9 +1,9 @@
-// routes/settingsRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getSettings, updateSettings } = require('../controllers/settingsController');
+const protectRoute = require("../middleware/adminMiddleware");
+const { getSettings, updateSettings } = require("../controllers/settingsController");
 
-router.get('/:adminId', getSettings);
-router.put('/:adminId', updateSettings);
+router.get("/", protectRoute, getSettings);
+router.put("/", protectRoute, updateSettings);
 
 module.exports = router;

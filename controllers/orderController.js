@@ -24,67 +24,66 @@ const sendPushNotification = async (subscription, payload) => {
 // CREATE ORDER
 exports.createOrder = async (req, res) => {
     try {
+        // 1️⃣ Create order
         const order = new Order(req.body);
         await order.save();
 
-        // ==============================
-        // FETCH ADMIN SETTINGS
-        // ==============================
-        const adminId = process.env.ADMIN_ID;
-        const settings = await AdminSettings.findOne({ adminId });
+        // 2️⃣ Fetch ALL admin settings (each admin has own toggles)
+        const admins = await AdminSettings.find();
 
-        // ==============================
-        // SOCKET.IO REAL-TIME NOTIFICATION
-        // ==============================
+        // 3️⃣ Load socket.io instance
         const io = req.app.locals.io;
 
-        if (io && settings && settings.pushEnabled) {
-            io.to(`admin_${adminId}`).emit("notification", {
-                type: "order_created",
-                title: "New Order",
-                message: `Order #${order._id} placed`,
-                orderId: order._id,
-                time: new Date(),
-            });
+        // 4️⃣ Notify all admins based on their settings
+        for (const settings of admins) {
+
+            // ==========================
+            // SOCKET.IO REAL-TIME ALERT
+            // ==========================
+            if (io && settings.pushEnabled) {
+                io.to(`admin_${settings.adminId}`).emit("notification", {
+                    type: "order_created",
+                    title: "New Order",
+                    message: `Order #${order._id} has been placed`,
+                    orderId: order._id,
+                    time: new Date(),
+                });
+            }
+
+            // ==========================
+            // EMAIL ALERT (RESEND)
+            // ==========================
+            if (settings.emailEnabled && settings.email) {
+                const html = `
+                    <h2>New Order Received</h2>
+                    <p><strong>Order ID:</strong> ${order._id}</p>
+                    <p><strong>Total:</strong> ${order.total || "N/A"}</p>
+                    <p>A new order has been placed on your store.</p>
+                `;
+
+                await sendEmail(
+                    settings.email,
+                    `New Order #${order._id}`,
+                    html
+                );
+
+                console.log("Resend → Email sent to:", settings.email);
+            }
         }
 
-        // ==============================
-        // EMAIL NOTIFICATION (RESEND)
-        // ==============================
-        if (settings && settings.emailEnabled && settings.email) {
-
-            const html = `
-                <h2>New Order Received</h2>
-                <p><strong>Order ID:</strong> ${order._id}</p>
-                <p><strong>Total:</strong> ${order.total || "N/A"}</p>
-                <p>A new order has been placed on Blush.</p>
-            `;
-
-            await sendEmail(
-                settings.email,
-                `New Order #${order._id}`,
-                html
-            );
-
-            console.log("Resend → Admin email notification sent.");
-        }
-
-        // ==============================
-        // LEGACY PUSH SYSTEM (still allowed)
-        // ==============================
-        const Admin = require("../models/adminSchema");
+        // 5️⃣ Legacy push system (optional)
         const admin = await Admin.findOne();
-
         if (admin?.subscription) {
-            await sendPushNotification(admin.subscription, {
-                title: "New Order Received 💐",
-                message: `Order #${order._id} has been placed.`,
-            });
+            await webPush.sendNotification(
+                admin.subscription,
+                JSON.stringify({
+                    title: "New Order Received 💐",
+                    message: `Order #${order._id} has been placed.`,
+                })
+            );
         }
 
-        // ==============================
-        // FINAL RESPONSE
-        // ==============================
+        // 6️⃣ Final response
         res.status(201).json({
             success: true,
             message: "Order created successfully",
@@ -96,8 +95,6 @@ exports.createOrder = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
-
 
 
 // GET ALL ORDERS (ADMIN)
