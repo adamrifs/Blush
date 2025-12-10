@@ -22,6 +22,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express()
+app.set("trust proxy", 1);
 app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'https://blush-beige.vercel.app', 'https://blush-adminpannel.vercel.app'],
     credentials: true
@@ -48,26 +49,30 @@ app.use('/api/settings', settingsRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: true, credentials: true }
+    cors: {
+        origin: true,
+        credentials: true,
+        methods: ["GET", "POST"],
+        allowedHeaders: ["Content-Type"]
+    },
+    transports: ["polling", "websocket"], 
+    allowEIO3: true,
+    path: "/socket.io"
 });
 
-// Make io accessible in controllers via app.locals
 app.locals.io = io;
-
 
 io.on('connection', async (socket) => {
 
-    
-    // GET admin ID from cookie using your protectRoute logic
+
     const cookieHeader = socket.request.headers.cookie;
-    
     let adminId = null;
-    
+
     if (cookieHeader) {
         const jwtCookie = cookieHeader
-        .split("; ")
-        .find((row) => row.startsWith("jwt="));
-        
+            .split("; ")
+            .find((row) => row.startsWith("jwt="));
+
         if (jwtCookie) {
             const token = jwtCookie.split("=")[1];
             try {
@@ -90,7 +95,7 @@ io.on('connection', async (socket) => {
             console.log("Navbar explicitly joined:", `admin_${adminId}`);
         }
     });
-    
+
     console.log("Cookie header:", cookieHeader);
     console.log("Decoded adminId:", adminId);
 
