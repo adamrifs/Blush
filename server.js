@@ -13,6 +13,7 @@ const customerRoutes = require('./routes/customerRoutes.js')
 const settingsRoutes = require('./routes/settingsRoutes.js')
 const connectCloudinary = require('./config/cloudinary.js')
 const cookieParser = require('cookie-parser');
+const jwt = require("jsonwebtoken");
 const dotenv = require('dotenv')
 dotenv.config()
 const passport = require("passport");
@@ -56,6 +57,9 @@ app.locals.io = io;
 
 io.on('connection', async (socket) => {
 
+    console.log("Cookie header:", cookieHeader);
+    console.log("Decoded adminId:", adminId);
+
     // GET admin ID from cookie using your protectRoute logic
     const cookieHeader = socket.request.headers.cookie;
 
@@ -82,6 +86,13 @@ io.on('connection', async (socket) => {
         socket.join(`admin_${adminId}`);
         console.log("Navbar joined room:", `admin_${adminId}`);
     }
+    socket.on("join-admin-navbar", () => {
+        if (adminId) {
+            socket.join(`admin_${adminId}`);
+            console.log("Navbar explicitly joined:", `admin_${adminId}`);
+        }
+    });
+
 
 });
 
