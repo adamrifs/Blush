@@ -57,19 +57,17 @@ app.locals.io = io;
 
 io.on('connection', async (socket) => {
 
-    console.log("Cookie header:", cookieHeader);
-    console.log("Decoded adminId:", adminId);
-
+    
     // GET admin ID from cookie using your protectRoute logic
     const cookieHeader = socket.request.headers.cookie;
-
+    
     let adminId = null;
-
+    
     if (cookieHeader) {
         const jwtCookie = cookieHeader
-            .split("; ")
-            .find((row) => row.startsWith("jwt="));
-
+        .split("; ")
+        .find((row) => row.startsWith("jwt="));
+        
         if (jwtCookie) {
             const token = jwtCookie.split("=")[1];
             try {
@@ -92,7 +90,9 @@ io.on('connection', async (socket) => {
             console.log("Navbar explicitly joined:", `admin_${adminId}`);
         }
     });
-
+    
+    console.log("Cookie header:", cookieHeader);
+    console.log("Decoded adminId:", adminId);
 
 });
 
