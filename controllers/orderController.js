@@ -41,7 +41,7 @@ exports.createOrder = async (req, res) => {
             // ==========================
             // SOCKET.IO REAL-TIME ALERT
             // ==========================
-            if (io && settings.pushEnabled) {
+            if (io) {
                 io.to(`admin_${settings.adminId}`).emit("notification", {
                     type: "order_created",
                     title: "New Order",
