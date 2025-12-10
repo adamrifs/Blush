@@ -47,25 +47,29 @@ app.use('/api/settings', settingsRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: true, credentials: true } // allow your frontend origin(s)
+    cors: { origin: true, credentials: true } 
 });
 
 // Make io accessible in controllers via app.locals
 app.locals.io = io;
 
-// (Optional) simple auth for socket: you can expand later
+
 io.on('connection', (socket) => {
     console.log('socket connected:', socket.id);
 
-    // join admin room if client sends adminId
     socket.on('join-admin', (adminId) => {
         socket.join(`admin_${adminId}`);
+        console.log(`Admin joined room: admin_${adminId}`);
+    });
+    socket.on("join-admin-navbar", () => {
+        console.log("Navbar connected:", socket.id);
     });
 
     socket.on('disconnect', () => {
         console.log('socket disconnected', socket.id);
     });
 });
+
 
 const port = process.env.PORT
 
