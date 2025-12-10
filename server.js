@@ -89,6 +89,6 @@ io.on('connection', async (socket) => {
 
 const port = process.env.PORT
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`server running succesfull on port ${port}`)
 })
