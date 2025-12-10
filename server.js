@@ -47,28 +47,44 @@ app.use('/api/settings', settingsRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: true, credentials: true } 
+    cors: { origin: true, credentials: true }
 });
 
 // Make io accessible in controllers via app.locals
 app.locals.io = io;
 
 
-io.on('connection', (socket) => {
-    console.log('socket connected:', socket.id);
+io.on('connection', async (socket) => {
 
-    socket.on('join-admin', (adminId) => {
+    // GET admin ID from cookie using your protectRoute logic
+    const cookieHeader = socket.request.headers.cookie;
+
+    let adminId = null;
+
+    if (cookieHeader) {
+        const jwtCookie = cookieHeader
+            .split("; ")
+            .find((row) => row.startsWith("jwt="));
+
+        if (jwtCookie) {
+            const token = jwtCookie.split("=")[1];
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                adminId = decoded.id;
+            } catch (err) {
+                console.log("Failed to decode JWT in socket");
+            }
+        }
+    }
+
+    // --- FIXED: always join admin room automatically ---
+    if (adminId) {
         socket.join(`admin_${adminId}`);
-        console.log(`Admin joined room: admin_${adminId}`);
-    });
-    socket.on("join-admin-navbar", () => {
-        console.log("Navbar connected:", socket.id);
-    });
+        console.log("Navbar joined room:", `admin_${adminId}`);
+    }
 
-    socket.on('disconnect', () => {
-        console.log('socket disconnected', socket.id);
-    });
 });
+
 
 
 const port = process.env.PORT
