@@ -11,6 +11,7 @@ const orderRoutes = require('./routes/orderRoutes.js');
 const pushRoutes = require('./routes/pushRoutes.js')
 const customerRoutes = require('./routes/customerRoutes.js')
 const settingsRoutes = require('./routes/settingsRoutes.js')
+const mediaRoutes = require('./routes/mediaRoutes.js')
 const connectCloudinary = require('./config/cloudinary.js')
 const cookieParser = require('cookie-parser');
 const jwt = require("jsonwebtoken");
@@ -46,6 +47,7 @@ app.use('/api/orders', orderRoutes);
 app.use("/api/push", pushRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use("/api/media", mediaRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
