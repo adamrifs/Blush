@@ -31,9 +31,27 @@ exports.uploadBulkImages = async (req, res) => {
 
 exports.getAllMedia = async (req, res) => {
     try {
-        const media = await Media.find().sort({ createdAt: -1 });
-        res.json({ media });
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+
+        const total = await Media.countDocuments();
+
+        const media = await Media.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            media,
+            pagination: {
+                total,
+                page,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (err) {
         res.status(500).json({ message: "Failed to fetch media" });
     }
 };
+
