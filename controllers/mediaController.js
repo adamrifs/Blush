@@ -1,6 +1,7 @@
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const Media = require('../models/mediaSchema')
+
 exports.uploadBulkImages = async (req, res) => {
     try {
         const folder = req.body.folder || "bulk-products";
@@ -75,5 +76,35 @@ exports.deleteMedia = async (req, res) => {
   } catch (error) {
     console.error("Delete media error:", error);
     res.status(500).json({ message: "Failed to delete image" });
+  }
+};
+
+exports.bulkDeleteMedia = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "No images selected" });
+    }
+
+    // 1️⃣ Find media records
+    const mediaList = await Media.find({ _id: { $in: ids } });
+
+    // 2️⃣ Delete from Cloudinary
+    await Promise.all(
+      mediaList.map(media =>
+        cloudinary.uploader.destroy(media.public_id)
+      )
+    );
+
+    // 3️⃣ Delete from DB
+    await Media.deleteMany({ _id: { $in: ids } });
+
+    res.json({
+      message: `${mediaList.length} images deleted successfully`
+    });
+  } catch (error) {
+    console.error("Bulk delete error:", error);
+    res.status(500).json({ message: "Bulk delete failed" });
   }
 };

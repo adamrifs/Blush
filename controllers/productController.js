@@ -1,173 +1,173 @@
 const cloudinary = require('cloudinary');
 const xlsx = require('xlsx');
+const slugify = require('slugify');
 const fs = require('fs');
 const Product = require('../models/productSchema');
 
 const addProduct = async (req, res) => {
     try {
         const {
-            name, price, stock, description, occasions, category, addons,
-            availableIn   // ⭐ NEW FIELD
-        } = req.body;
-
-        if (!name || !price || !stock || !description || !occasions || !category) {
-            return res.status(400).json({ message: 'All fields are required' });
-        }
-
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: 'At least one image is required' });
-        }
-
-        // Upload product images
-        let imageUrls = await Promise.all(
-            req.files.map(async (file) => {
-                const result = await cloudinary.uploader.upload(file.path, {
-                    folder: 'products',
-                });
-                return result.secure_url;
-            })
-        );
-
-        let addonsArray = addons ? JSON.parse(addons) : [];
-
-        // Upload addon images
-        if (req.files.some(f => f.fieldname.startsWith('addonImage'))) {
-            addonsArray = await Promise.all(
-                addonsArray.map(async (addon, index) => {
-                    const addonFile = req.files.find(f => f.fieldname === `addonImage_${index}`);
-                    if (addonFile) {
-                        const uploaded = await cloudinary.uploader.upload(addonFile.path, { folder: 'addons' });
-                        addon.image = uploaded.secure_url;
-                    }
-                    return addon;
-                })
-            );
-        }
-
-        // ⭐ Convert availableIn into array (incoming may be string)
-        const emiratesArray = availableIn
-            ? (Array.isArray(availableIn) ? availableIn : JSON.parse(availableIn))
-            : [
-                "Abu Dhabi", "Dubai", "Sharjah", "Ajman", "Umm Al Quwain",
-                "Ras Al Khaimah", "Fujairah", "Al Ain"
-            ];
-
-        const newProduct = new Product({
             name,
+            type = "simple",
+            sku,
+            regularPrice,
             price,
-            stock,
+            stock = 0,
             description,
             occasions,
             category,
-            addons: addonsArray,
+            addons,
+            availableIn,
+            isFeatured = false,
+            variations
+        } = req.body;
+
+        if (!name || !regularPrice || !description || !category) {
+            return res.status(400).json({ message: "Required fields missing" });
+        }
+
+        // Generate slug
+        const slug = `${slugify(name, { lower: true, strict: true })}-${Date.now()}`;
+
+        // Upload images
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: "At least one image is required" });
+        }
+
+        const imageUrls = await Promise.all(
+            req.files.map(async (file) => {
+                const uploaded = await cloudinary.uploader.upload(file.path, {
+                    folder: "products"
+                });
+                return uploaded.secure_url;
+            })
+        );
+
+        const product = new Product({
+            name,
+            slug,
+            type,
+            sku,
+            regularPrice,
+            price: price || regularPrice,
+            stock,
+            inStock: stock > 0,
+            description,
+            occasions,
+            category,
+            isFeatured,
             image: imageUrls,
-
-            // ⭐ ADD HERE
-            availableIn: emiratesArray
+            availableIn: availableIn
+                ? Array.isArray(availableIn)
+                    ? availableIn
+                    : JSON.parse(availableIn)
+                : undefined,
+            addons: addons ? JSON.parse(addons) : [],
+            variations: type === "variable" && variations
+                ? JSON.parse(variations)
+                : []
         });
 
-        await newProduct.save();
+        await product.save();
 
-        res.status(200).json({
-            message: 'Product added successfully',
-            product: newProduct,
+        res.status(201).json({
+            message: "Product added successfully",
+            product
         });
+
     } catch (error) {
-        console.log(error, 'error on addProduct');
+        console.error("addProduct error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 
+
 const getProduct = async (req, res) => {
     try {
-        const products = await Product.find()
-        res.status(200).json({ products })
+        const products = await Product.find().sort({ createdAt: -1 });
+        res.status(200).json({ products });
     } catch (error) {
-        console.log(error, 'error occured on getProduct')
-        res.status(500).json({ message: error.message })
+        res.status(500).json({ message: error.message });
     }
-}
+};
 
 const singleProduct = async (req, res) => {
     try {
-        const { id } = req.params
-        const product = await Product.findById(id)
+        const { idOrSlug } = req.params;
+
+        const product = mongoose.Types.ObjectId.isValid(idOrSlug)
+            ? await Product.findById(idOrSlug)
+            : await Product.findOne({ slug: idOrSlug });
+
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ message: "Product not found" });
         }
-        res.status(200).json({ message: 'product fetched', product })
+
+        res.json({ product });
     } catch (error) {
-        console.log(error, 'error occured on singleProduct')
-        res.status(500).json({ message: error.message })
+        res.status(500).json({ message: error.message });
     }
-}
+};
 
 const editProduct = async (req, res) => {
     try {
-        const { name, price, description, stock, occasions, category, addons, availableIn } = req.body;
         const { id } = req.params;
 
         const product = await Product.findById(id);
         if (!product) {
-            return res.status(404).json({ success: false, message: "Product not found" });
+            return res.status(404).json({ message: "Product not found" });
         }
 
-        if (name) product.name = name;
-        if (price) product.price = price;
-        if (description) product.description = description;
-        if (stock) product.stock = stock;
-        if (category) product.category = category;
-        if (occasions) product.occasions = occasions;
+        const fields = [
+            "name", "type", "sku", "regularPrice", "price",
+            "description", "category", "occasions",
+            "isFeatured", "availableIn"
+        ];
 
-        // ⭐ Update emirates availability
-        if (availableIn) {
-            product.availableIn = Array.isArray(availableIn)
-                ? availableIn
-                : JSON.parse(availableIn);
-        }
-
-        let addonsArray = addons ? (typeof addons === 'string' ? JSON.parse(addons) : addons) : product.addons;
-
-        // addon image upload
-        if (req.files && req.files.length > 0) {
-            for (let i = 0; i < addonsArray.length; i++) {
-                const file = req.files.find(f => f.fieldname === `addonImage_${i}`);
-                if (file) {
-                    const uploaded = await cloudinary.uploader.upload(file.path, { folder: 'addons' });
-                    addonsArray[i].image = uploaded.secure_url;
-                }
+        fields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                product[field] = req.body[field];
             }
+        });
+
+        // Update slug if name changes
+        if (req.body.name) {
+            product.slug = `${slugify(req.body.name, { lower: true, strict: true })}-${Date.now()}`;
         }
 
-        product.addons = addonsArray;
+        if (req.body.stock !== undefined) {
+            product.stock = Number(req.body.stock);
+            product.inStock = product.stock > 0;
+        }
 
-        // product images
+        if (req.body.variations && product.type === "variable") {
+            product.variations = JSON.parse(req.body.variations);
+        }
+
+        // Upload new images
         if (req.files && req.files.length > 0) {
             const uploadedImages = await Promise.all(
-                req.files.map((file) => {
-                    return cloudinary.uploader.upload(file.path, { folder: 'products' });
-                })
+                req.files.map(file =>
+                    cloudinary.uploader.upload(file.path, { folder: "products" })
+                )
             );
-
-            product.image = uploadedImages.map((img) => ({
-                url: img.secure_url,
-                public_id: img.public_id
-            }));
+            product.image = uploadedImages.map(i => i.secure_url);
         }
 
         await product.save();
 
-        res.status(200).json({
-            success: true,
+        res.json({
             message: "Product updated successfully",
-            product,
+            product
         });
+
     } catch (error) {
-        console.log(error, 'error at editProduct')
-        res.status(500).json({ message: error.message })
+        console.error("editProduct error:", error);
+        res.status(500).json({ message: error.message });
     }
 };
+
 
 
 const deleteProduct = async (req, res) => {
@@ -184,54 +184,44 @@ const deleteProduct = async (req, res) => {
 
 const bulkUploadProducts = async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-
         const workbook = xlsx.readFile(req.file.path);
-        const sheetName = workbook.SheetNames[0];
-        const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = xlsx.utils.sheet_to_json(sheet);
 
         fs.unlinkSync(req.file.path);
 
-        if (!sheetData || sheetData.length === 0) {
-            return res.status(400).json({ message: 'Excel file is empty or invalid' });
-        }
-
-        const products = sheetData.map((row) => ({
+        const products = data.map(row => ({
             name: row.name,
-            price: Number(row.price),
-            stock: Number(row.stock),
+            slug: `${slugify(row.name, { lower: true, strict: true })}-${Date.now()}`,
+            type: row.type || "simple",
+            sku: row.sku,
+            regularPrice: Number(row.regularPrice),
+            price: Number(row.price || row.regularPrice),
+            stock: Number(row.stock || 0),
+            inStock: Number(row.stock) > 0,
             description: row.description,
-            occasions: row.occasions || "General",
             category: row.category,
-
-            // ⭐ Improved trimming
+            occasions: row.occasions || "General",
+            isFeatured: row.isFeatured === "true",
+            image: row.image ? row.image.split(',').map(i => i.trim()) : [],
             availableIn: row.availableIn
                 ? row.availableIn.split(',').map(e => e.trim())
                 : [],
-
-            image: row.image
-                ? row.image.split(',').map(img => img.trim())
-                : [],
-
-
-            addons: row.addons
-                ? JSON.parse(row.addons)
-                : [],
+            variations: row.variations ? JSON.parse(row.variations) : []
         }));
 
         await Product.insertMany(products);
 
-        res.status(200).json({
-            message: `${products.length} products uploaded successfully`,
-            count: products.length,
+        res.json({
+            message: `${products.length} products uploaded successfully`
         });
+
     } catch (error) {
-        console.error('Error in bulkUploadProducts:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error("bulkUploadProducts error:", error);
+        res.status(500).json({ message: error.message });
     }
 };
+
 
 const bulkDeleteProducts = async (req, res) => {
     try {
