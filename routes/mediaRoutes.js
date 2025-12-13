@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const { uploadBulkImages } = require("../controllers/mediaController");
 const { getAllMedia } = require("../controllers/mediaController");
+const { deleteMedia } = require("../controllers/mediaController");
 
 const upload = multer({ dest: "uploads/" });
 
@@ -12,5 +13,6 @@ router.post(
     uploadBulkImages
 );
 router.get("/all", getAllMedia);
+router.delete("/delete/:id", deleteMedia);
 
 module.exports = router;

@@ -55,3 +55,25 @@ exports.getAllMedia = async (req, res) => {
     }
 };
 
+exports.deleteMedia = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1️⃣ Find media in DB
+    const media = await Media.findById(id);
+    if (!media) {
+      return res.status(404).json({ message: "Media not found" });
+    }
+
+    // 2️⃣ Delete from Cloudinary
+    await cloudinary.uploader.destroy(media.public_id);
+
+    // 3️⃣ Delete from MongoDB
+    await Media.findByIdAndDelete(id);
+
+    res.json({ message: "Image deleted successfully" });
+  } catch (error) {
+    console.error("Delete media error:", error);
+    res.status(500).json({ message: "Failed to delete image" });
+  }
+};
