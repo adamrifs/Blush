@@ -211,7 +211,10 @@ const bulkUploadProducts = async (req, res) => {
                 ? row.availableIn.split(',').map(e => e.trim())
                 : [],
 
-            image: row.image ? [row.image] : [],
+            image: row.image
+                ? row.image.split(',').map(img => img.trim())
+                : [],
+
 
             addons: row.addons
                 ? JSON.parse(row.addons)
