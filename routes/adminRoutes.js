@@ -1,5 +1,5 @@
 const express = require('express')
-const { adminRegister, adminLogin, adminLogout } = require('../controllers/adminController')
+const { adminRegister, adminLogin, adminLogout, getMe } = require('../controllers/adminController')
 const protectRoute = require('../middleware/adminMiddleware')
 const router = express.Router()
 
