@@ -17,7 +17,8 @@ exports.uploadBulkImages = async (req, res) => {
                 const media = await Media.create({
                     url: result.secure_url,
                     public_id: result.public_id,
-                    folder
+                    folder,
+                    originalName: file.originalname 
                 });
 
                 return media;
