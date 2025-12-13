@@ -59,4 +59,15 @@ const adminLogout = async (req, res) => {
     }
 }
 
-module.exports = { adminLogin, adminRegister, adminLogout }
+const getMe = async (req, res) => {
+    try {
+        res.status(200).json({
+            success: true,
+            admin: req.admin, 
+        });
+    } catch (err) {
+        res.status(401).json({ message: "Not authenticated" });
+    }
+};
+
+module.exports = { adminLogin, adminRegister, adminLogout ,getMe}
