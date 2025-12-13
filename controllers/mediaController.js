@@ -1,34 +1,39 @@
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
-
+const Media = require('../models/mediaSchema')
 exports.uploadBulkImages = async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "No images uploaded" });
+    try {
+        const folder = req.body.folder || "bulk-products";
+
+        const uploads = await Promise.all(
+            req.files.map(async (file) => {
+                const result = await cloudinary.uploader.upload(file.path, {
+                    folder
+                });
+
+                fs.unlinkSync(file.path);
+
+                const media = await Media.create({
+                    url: result.secure_url,
+                    public_id: result.public_id,
+                    folder
+                });
+
+                return media;
+            })
+        );
+
+        res.json({ images: uploads });
+    } catch (err) {
+        res.status(500).json({ message: "Upload failed" });
     }
+};
 
-    const uploads = await Promise.all(
-      req.files.map(async (file) => {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: "bulk-products"
-        });
-
-        fs.unlinkSync(file.path);
-
-        return {
-          url: result.secure_url,
-          public_id: result.public_id
-        };
-      })
-    );
-
-    res.status(200).json({
-      message: "Images uploaded successfully",
-      images: uploads
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Image upload failed" });
-  }
+exports.getAllMedia = async (req, res) => {
+    try {
+        const media = await Media.find().sort({ createdAt: -1 });
+        res.json({ media });
+    } catch (err) {
+        res.status(500).json({ message: "Failed to fetch media" });
+    }
 };
