@@ -184,58 +184,61 @@ const deleteProduct = async (req, res) => {
 
 const bulkUploadProducts = async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ message: "No file uploaded" });
-        }
-
         const workbook = xlsx.readFile(req.file.path, {
             raw: false,
             defval: ""
         });
 
         const sheetName = workbook.SheetNames[0];
-        const sheetData = xlsx.utils.sheet_to_json(
+        const rows = xlsx.utils.sheet_to_json(
             workbook.Sheets[sheetName],
             { defval: "" }
         );
 
         fs.unlinkSync(req.file.path);
 
-        if (!sheetData || sheetData.length === 0) {
-            return res.status(400).json({ message: "Excel/CSV file is empty" });
-        }
+        const products = rows.map((row, index) => {
+            const name = row.name || row.Name;
+            if (!name) throw new Error(`Missing name at row ${index + 2}`);
 
-        const products = sheetData.map((row) => ({
-            name: row.name,
-            price: Number(row.price),
-            stock: Number(row.stock),
-            description: row.description,
-            occasions: row.occasions || "General",
-            category: row.category,
+            const price = parseFloat(row.price || row.Price);
+            const stock = parseInt(row.stock || row.Stock);
 
-            availableIn: row.availableIn
-                ? row.availableIn.split(",").map(e => e.trim())
-                : [],
+            if (isNaN(price) || isNaN(stock)) {
+                throw new Error(`Invalid price/stock at row ${index + 2}`);
+            }
 
-            image: row.image
-                ? row.image.split(",").map(img => img.trim())
-                : [],
+            return {
+                name,
+                slug: slugify(name),
+                price,
+                regularPrice: price,
+                stock,
+                description: row.description || row.Description || "",
+                category: row.category || row.Category,
+                occasions: row.occasions || "General",
 
-            addons: row.addons
-                ? JSON.parse(row.addons)
-                : [],
-        }));
+                availableIn: row.availableIn
+                    ? row.availableIn.split(",").map(e => e.trim())
+                    : [],
+
+                image: row.image
+                    ? row.image.split(",").map(img => img.trim())
+                    : [],
+
+                addons: row.addons ? JSON.parse(row.addons) : [],
+            };
+        });
 
         await Product.insertMany(products);
 
         res.json({
-            message: `${products.length} products uploaded successfully`,
-            count: products.length
+            message: `${products.length} products uploaded successfully`
         });
 
-    } catch (error) {
-        console.error("Bulk upload error:", error);
-        res.status(500).json({ message: error.message });
+    } catch (err) {
+        console.error("Bulk upload error:", err.message);
+        res.status(400).json({ message: err.message });
     }
 };
 
