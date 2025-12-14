@@ -294,6 +294,8 @@ const bulkUploadProducts = async (req, res) => {
                     row.Description ||
                     `Description for ${name}`;
 
+                const imageValue = row.image || row.Image;
+                
                 validProducts.push({
                     name,
                     slug: slugify(name, { lower: true, strict: true }),
@@ -311,9 +313,10 @@ const bulkUploadProducts = async (req, res) => {
                         ? row.availableIn.split(",").map(e => e.trim())
                         : undefined,
 
-                    image: row.image
-                        ? row.image.split(",").map(img => img.trim())
+                    image: imageValue
+                        ? imageValue.split(",").map(img => img.trim())
                         : [],
+
 
                     addons: row.addons ? JSON.parse(row.addons) : []
                 });
