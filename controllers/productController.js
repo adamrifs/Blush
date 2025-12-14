@@ -245,20 +245,36 @@ const bulkUploadProducts = async (req, res) => {
                 const name = row.name || row.Name;
                 if (!name) throw new Error("Missing product name");
 
-                const price = cleanNumber(
-                    row.sale_price || row.Sale_price || row.regular_price || row.Regular_price || row.price
-                );
+                // ---- PRICE HANDLING (SAFE) ----
+                const salePrice = cleanNumber(row.sale_price || row.Sale_price);
+                const regularPriceRaw = cleanNumber(row.regular_price || row.Regular_price);
+                const fallbackPrice = cleanNumber(row.price);
 
-                const regularPrice =
-                    cleanNumber(row.regular_price) || price;
+                // final selling price
+                const price =
+                    !isNaN(salePrice)
+                        ? salePrice
+                        : !isNaN(regularPriceRaw)
+                            ? regularPriceRaw
+                            : fallbackPrice;
 
-                const stock = cleanNumber(
+                if (isNaN(price)) {
+                    throw new Error("Invalid price");
+                }
+
+                // regular price fallback
+                const regularPrice = !isNaN(regularPriceRaw)
+                    ? regularPriceRaw
+                    : price;
+
+                // ---- STOCK HANDLING (SAFE) ----
+                let stock = cleanNumber(
                     row.stock_quantity || row.stock || row.Stock
                 );
 
-                if (isNaN(price) || isNaN(regularPrice) || isNaN(stock)) {
-                    throw new Error("Invalid price or stock");
-                }
+                // empty stock is VALID → default to 0
+                if (isNaN(stock)) stock = 0;
+
 
                 const category = normalizeCategory(
                     row.category || row.Category || row.Categories
@@ -305,7 +321,7 @@ const bulkUploadProducts = async (req, res) => {
                     row: index + 2,
                     reason: err.message
                 });
-                console.log("Product validation error :",err)
+                console.log("Product validation error :", err)
             }
         });
 
