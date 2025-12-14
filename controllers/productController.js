@@ -10,6 +10,36 @@ const cleanNumber = (value) => {
     return cleaned === "" ? NaN : Number(cleaned);
 };
 
+
+// categories allowed by your schema
+const ALLOWED_CATEGORIES = [
+    "Bouquet",
+    "Hand Bouquet",
+    "Cake",
+    "Combo Deals",
+    "Forever Flowers",
+    "Flower Basket",
+    "Fruits and Flowers",
+    "Mini Bouquet",
+    "Vase Arrangements",
+    "Plants"
+];
+
+// normalize WooCommerce / random categories
+const normalizeCategory = (value) => {
+    if (!value) return "Bouquet";
+    return ALLOWED_CATEGORIES.includes(value)
+        ? value
+        : "Bouquet";
+};
+
+// normalize product type
+const normalizeType = (value) => {
+    return String(value || "simple").toLowerCase() === "variable"
+        ? "variable"
+        : "simple";
+};
+
 const addProduct = async (req, res) => {
     try {
         const {
@@ -194,7 +224,6 @@ const bulkUploadProducts = async (req, res) => {
             return res.status(400).json({ message: "No file uploaded" });
         }
 
-        // Read Excel / CSV
         const workbook = xlsx.readFile(req.file.path, {
             raw: false,
             defval: ""
@@ -208,10 +237,6 @@ const bulkUploadProducts = async (req, res) => {
 
         fs.unlinkSync(req.file.path);
 
-        if (!rows || rows.length === 0) {
-            return res.status(400).json({ message: "File is empty" });
-        }
-
         const validProducts = [];
         const skippedRows = [];
 
@@ -224,7 +249,8 @@ const bulkUploadProducts = async (req, res) => {
                     row.sale_price || row.regular_price || row.price
                 );
 
-                const regularPrice = cleanNumber(row.regular_price) || price;
+                const regularPrice =
+                    cleanNumber(row.regular_price) || price;
 
                 const stock = cleanNumber(
                     row.stock_quantity || row.stock
@@ -234,66 +260,38 @@ const bulkUploadProducts = async (req, res) => {
                     throw new Error("Invalid price or stock");
                 }
 
-                const category =
-                    row.category || row.Category || row.Categories;
+                const category = normalizeCategory(
+                    row.category || row.Category || row.Categories
+                );
 
-                if (!category) {
-                    throw new Error("Missing category");
-                }
+                const type = normalizeType(row.type || row.Type);
 
-                // ✅ normalize product type
-                const type =
-                    (row.type || row.Type || "simple").toLowerCase() === "variable"
-                        ? "variable"
-                        : "simple";
-
-                // ✅ SKU handling
                 const sku =
                     row.sku ||
                     row.SKU ||
-                    `SKU-${slugify(name, { lower: true })}-${index + 1}`;
+                    `SKU-${slugify(name, { upper: true })}-${index + 1}`;
 
-                // ✅ description is REQUIRED
                 const description =
                     row.description ||
                     row.Description ||
                     `Description for ${name}`;
 
-                const allowedCategories = [
-                    "Bouquet",
-                    "Hand Bouquet",
-                    "Cake",
-                    "Combo Deals",
-                    "Forever Flowers",
-                    "Flower Basket",
-                    "Fruits and Flowers",
-                    "Mini Bouquet",
-                    "Vase Arrangements",
-                    "Plants"
-                ];
-
-                let normalizedCategory = category;
-
-                // fallback for Woo "Uncategorized"
-                if (!allowedCategories.includes(normalizedCategory)) {
-                    normalizedCategory = "Bouquet"; // or any default
-                }
-
                 validProducts.push({
                     name,
                     slug: slugify(name, { lower: true, strict: true }),
-                    type,
                     sku,
+                    type,
                     price,
                     regularPrice,
                     stock,
                     inStock: stock > 0,
                     description,
-                    category: normalizedCategory,
+                    category,
                     occasions: row.occasions || "General",
+
                     availableIn: row.availableIn
                         ? row.availableIn.split(",").map(e => e.trim())
-                        : undefined, // allow schema default
+                        : undefined,
 
                     image: row.image
                         ? row.image.split(",").map(img => img.trim())
@@ -310,14 +308,9 @@ const bulkUploadProducts = async (req, res) => {
             }
         });
 
-
-        /* ---------- INSERT VALID PRODUCTS ---------- */
-
         if (validProducts.length > 0) {
             await Product.insertMany(validProducts);
         }
-
-        /* ---------- RESPONSE ---------- */
 
         res.json({
             message: "Bulk upload completed",
