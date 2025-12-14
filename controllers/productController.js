@@ -217,45 +217,64 @@ const bulkUploadProducts = async (req, res) => {
 
         rows.forEach((row, index) => {
             try {
-                /* ---------- REQUIRED FIELDS ---------- */
-
                 const name = row.name || row.Name;
-                if (!name) {
-                    throw new Error("Missing product name");
-                }
+                if (!name) throw new Error("Missing product name");
 
                 const price = cleanNumber(
                     row.sale_price || row.regular_price || row.price
                 );
 
+                const regularPrice = cleanNumber(row.regular_price) || price;
+
                 const stock = cleanNumber(
                     row.stock_quantity || row.stock
                 );
 
-                if (isNaN(price) || isNaN(stock)) {
+                if (isNaN(price) || isNaN(regularPrice) || isNaN(stock)) {
                     throw new Error("Invalid price or stock");
                 }
 
-                const category = row.category || row.Category;
+                const category =
+                    row.category || row.Category || row.Categories;
+
                 if (!category) {
                     throw new Error("Missing category");
                 }
 
-                /* ---------- BUILD PRODUCT ---------- */
+                // ✅ normalize product type
+                const type =
+                    (row.type || row.Type || "simple").toLowerCase() === "variable"
+                        ? "variable"
+                        : "simple";
+
+                // ✅ SKU handling
+                const sku =
+                    row.sku ||
+                    row.SKU ||
+                    `SKU-${slugify(name, { lower: true })}-${index + 1}`;
+
+                // ✅ description is REQUIRED
+                const description =
+                    row.description ||
+                    row.Description ||
+                    `Description for ${name}`;
 
                 validProducts.push({
                     name,
-                    slug: slugify(name),
+                    slug: slugify(name, { lower: true, strict: true }),
+                    type,
+                    sku,
                     price,
-                    regularPrice: cleanNumber(row.regular_price) || price,
+                    regularPrice,
                     stock,
-                    description: row.description || row.Description || "",
+                    inStock: stock > 0,
+                    description,
                     category,
                     occasions: row.occasions || "General",
 
                     availableIn: row.availableIn
                         ? row.availableIn.split(",").map(e => e.trim())
-                        : [],
+                        : undefined, // allow schema default
 
                     image: row.image
                         ? row.image.split(",").map(img => img.trim())
@@ -266,11 +285,12 @@ const bulkUploadProducts = async (req, res) => {
 
             } catch (err) {
                 skippedRows.push({
-                    row: index + 2, // Excel row number
+                    row: index + 2,
                     reason: err.message
                 });
             }
         });
+
 
         /* ---------- INSERT VALID PRODUCTS ---------- */
 
