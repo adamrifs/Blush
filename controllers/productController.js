@@ -246,14 +246,14 @@ const bulkUploadProducts = async (req, res) => {
                 if (!name) throw new Error("Missing product name");
 
                 const price = cleanNumber(
-                    row.sale_price || row.regular_price || row.price
+                    row.sale_price || row.Sale_price || row.regular_price || row.Regular_price || row.price
                 );
 
                 const regularPrice =
                     cleanNumber(row.regular_price) || price;
 
                 const stock = cleanNumber(
-                    row.stock_quantity || row.stock
+                    row.stock_quantity || row.stock || row.Stock
                 );
 
                 if (isNaN(price) || isNaN(regularPrice) || isNaN(stock)) {
@@ -305,6 +305,7 @@ const bulkUploadProducts = async (req, res) => {
                     row: index + 2,
                     reason: err.message
                 });
+                console.log("Product validation error :",err)
             }
         });
 
