@@ -259,7 +259,9 @@ const bulkUploadProducts = async (req, res) => {
                             : fallbackPrice;
 
                 if (isNaN(price)) {
-                    throw new Error("Invalid price");
+                    throw new Error(
+                        `Missing price (sale_price / regular_price)`
+                    );
                 }
 
                 // regular price fallback
