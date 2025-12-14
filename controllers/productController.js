@@ -259,6 +259,26 @@ const bulkUploadProducts = async (req, res) => {
                     row.Description ||
                     `Description for ${name}`;
 
+                const allowedCategories = [
+                    "Bouquet",
+                    "Hand Bouquet",
+                    "Cake",
+                    "Combo Deals",
+                    "Forever Flowers",
+                    "Flower Basket",
+                    "Fruits and Flowers",
+                    "Mini Bouquet",
+                    "Vase Arrangements",
+                    "Plants"
+                ];
+
+                let normalizedCategory = category;
+
+                // fallback for Woo "Uncategorized"
+                if (!allowedCategories.includes(normalizedCategory)) {
+                    normalizedCategory = "Bouquet"; // or any default
+                }
+
                 validProducts.push({
                     name,
                     slug: slugify(name, { lower: true, strict: true }),
@@ -269,9 +289,8 @@ const bulkUploadProducts = async (req, res) => {
                     stock,
                     inStock: stock > 0,
                     description,
-                    category,
+                    category: normalizedCategory,
                     occasions: row.occasions || "General",
-
                     availableIn: row.availableIn
                         ? row.availableIn.split(",").map(e => e.trim())
                         : undefined, // allow schema default
