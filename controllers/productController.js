@@ -184,43 +184,61 @@ const deleteProduct = async (req, res) => {
 
 const bulkUploadProducts = async (req, res) => {
     try {
-        const workbook = xlsx.readFile(req.file.path);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = xlsx.utils.sheet_to_json(sheet);
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const workbook = xlsx.readFile(req.file.path, {
+            raw: false,
+            defval: ""
+        });
+
+        const sheetName = workbook.SheetNames[0];
+        const sheetData = xlsx.utils.sheet_to_json(
+            workbook.Sheets[sheetName],
+            { defval: "" }
+        );
 
         fs.unlinkSync(req.file.path);
 
-        const products = data.map(row => ({
+        if (!sheetData || sheetData.length === 0) {
+            return res.status(400).json({ message: "Excel/CSV file is empty" });
+        }
+
+        const products = sheetData.map((row) => ({
             name: row.name,
-            slug: `${slugify(row.name, { lower: true, strict: true })}-${Date.now()}`,
-            type: row.type || "simple",
-            sku: row.sku,
-            regularPrice: Number(row.regularPrice),
-            price: Number(row.price || row.regularPrice),
-            stock: Number(row.stock || 0),
-            inStock: Number(row.stock) > 0,
+            price: Number(row.price),
+            stock: Number(row.stock),
             description: row.description,
-            category: row.category,
             occasions: row.occasions || "General",
-            isFeatured: row.isFeatured === "true",
-            image: row.image ? row.image.split(',').map(i => i.trim()) : [],
+            category: row.category,
+
             availableIn: row.availableIn
-                ? row.availableIn.split(',').map(e => e.trim())
+                ? row.availableIn.split(",").map(e => e.trim())
                 : [],
-            variations: row.variations ? JSON.parse(row.variations) : []
+
+            image: row.image
+                ? row.image.split(",").map(img => img.trim())
+                : [],
+
+            addons: row.addons
+                ? JSON.parse(row.addons)
+                : [],
         }));
 
         await Product.insertMany(products);
 
         res.json({
-            message: `${products.length} products uploaded successfully`
+            message: `${products.length} products uploaded successfully`,
+            count: products.length
         });
 
     } catch (error) {
-        console.error("bulkUploadProducts error:", error);
+        console.error("Bulk upload error:", error);
         res.status(500).json({ message: error.message });
     }
 };
+
 
 
 const bulkDeleteProducts = async (req, res) => {
