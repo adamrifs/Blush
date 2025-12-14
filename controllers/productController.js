@@ -4,6 +4,20 @@ const slugify = require('slugify');
 const fs = require('fs');
 const Product = require('../models/productSchema');
 
+const cleanNumber = (value) => {
+    if (value === undefined || value === null) return NaN;
+    const cleaned = String(value).replace(/[^0-9.]/g, "");
+    return cleaned === "" ? NaN : Number(cleaned);
+};
+
+const slugify = (text) =>
+    text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w\-]+/g, "");
+
 const addProduct = async (req, res) => {
     try {
         const {
@@ -184,6 +198,11 @@ const deleteProduct = async (req, res) => {
 
 const bulkUploadProducts = async (req, res) => {
     try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        // Read Excel / CSV
         const workbook = xlsx.readFile(req.file.path, {
             raw: false,
             defval: ""
@@ -197,51 +216,91 @@ const bulkUploadProducts = async (req, res) => {
 
         fs.unlinkSync(req.file.path);
 
-        const products = rows.map((row, index) => {
-            const name = row.name || row.Name;
-            if (!name) throw new Error(`Missing name at row ${index + 2}`);
+        if (!rows || rows.length === 0) {
+            return res.status(400).json({ message: "File is empty" });
+        }
 
-            const price = parseFloat(row.price || row.Price);
-            const stock = parseInt(row.stock || row.Stock);
+        const validProducts = [];
+        const skippedRows = [];
 
-            if (isNaN(price) || isNaN(stock)) {
-                throw new Error(`Invalid price/stock at row ${index + 2}`);
+        rows.forEach((row, index) => {
+            try {
+                /* ---------- REQUIRED FIELDS ---------- */
+
+                const name = row.name || row.Name;
+                if (!name) {
+                    throw new Error("Missing product name");
+                }
+
+                const price = cleanNumber(
+                    row.sale_price || row.regular_price || row.price
+                );
+
+                const stock = cleanNumber(
+                    row.stock_quantity || row.stock
+                );
+
+                if (isNaN(price) || isNaN(stock)) {
+                    throw new Error("Invalid price or stock");
+                }
+
+                const category = row.category || row.Category;
+                if (!category) {
+                    throw new Error("Missing category");
+                }
+
+                /* ---------- BUILD PRODUCT ---------- */
+
+                validProducts.push({
+                    name,
+                    slug: slugify(name),
+                    price,
+                    regularPrice: cleanNumber(row.regular_price) || price,
+                    stock,
+                    description: row.description || row.Description || "",
+                    category,
+                    occasions: row.occasions || "General",
+
+                    availableIn: row.availableIn
+                        ? row.availableIn.split(",").map(e => e.trim())
+                        : [],
+
+                    image: row.image
+                        ? row.image.split(",").map(img => img.trim())
+                        : [],
+
+                    addons: row.addons ? JSON.parse(row.addons) : []
+                });
+
+            } catch (err) {
+                skippedRows.push({
+                    row: index + 2, // Excel row number
+                    reason: err.message
+                });
             }
-
-            return {
-                name,
-                slug: slugify(name),
-                price,
-                regularPrice: price,
-                stock,
-                description: row.description || row.Description || "",
-                category: row.category || row.Category,
-                occasions: row.occasions || "General",
-
-                availableIn: row.availableIn
-                    ? row.availableIn.split(",").map(e => e.trim())
-                    : [],
-
-                image: row.image
-                    ? row.image.split(",").map(img => img.trim())
-                    : [],
-
-                addons: row.addons ? JSON.parse(row.addons) : [],
-            };
         });
 
-        await Product.insertMany(products);
+        /* ---------- INSERT VALID PRODUCTS ---------- */
+
+        if (validProducts.length > 0) {
+            await Product.insertMany(validProducts);
+        }
+
+        /* ---------- RESPONSE ---------- */
 
         res.json({
-            message: `${products.length} products uploaded successfully`
+            message: "Bulk upload completed",
+            totalRows: rows.length,
+            uploaded: validProducts.length,
+            skipped: skippedRows.length,
+            skippedRows
         });
 
-    } catch (err) {
-        console.error("Bulk upload error:", err.message);
-        res.status(400).json({ message: err.message });
+    } catch (error) {
+        console.error("Bulk upload error:", error);
+        res.status(500).json({ message: "Bulk upload failed" });
     }
 };
-
 
 
 const bulkDeleteProducts = async (req, res) => {
