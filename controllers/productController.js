@@ -333,6 +333,79 @@ const bulkUploadProducts = async (req, res) => {
     }
 };
 
+const bulkPreviewProducts = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const workbook = xlsx.readFile(req.file.path, {
+            raw: false,
+            defval: ""
+        });
+
+        const sheetName = workbook.SheetNames[0];
+        const rows = xlsx.utils.sheet_to_json(
+            workbook.Sheets[sheetName],
+            { defval: "" }
+        );
+
+        fs.unlinkSync(req.file.path);
+
+        const validProducts = [];
+        const skippedRows = [];
+
+        rows.forEach((row, index) => {
+            try {
+                const name = row.name || row.Name;
+                if (!name) throw new Error("Missing name");
+
+                const price = cleanNumber(
+                    row.sale_price || row.regular_price || row.price
+                );
+
+                const stock = cleanNumber(
+                    row.stock_quantity || row.stock
+                );
+
+                if (isNaN(price) || isNaN(stock)) {
+                    throw new Error("Invalid price or stock");
+                }
+
+                const category =
+                    row.category || row.Category || row.Categories || "Bouquet";
+
+                validProducts.push({
+                    name,
+                    price,
+                    stock,
+                    category,
+                    imageCount: row.image
+                        ? row.image.split(",").length
+                        : 0
+                });
+
+            } catch (err) {
+                skippedRows.push({
+                    row: index + 2,
+                    reason: err.message
+                });
+            }
+        });
+
+        res.json({
+            total: rows.length,
+            validCount: validProducts.length,
+            skippedCount: skippedRows.length,
+            validProducts,
+            skippedRows
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: "Preview failed" });
+    }
+};
+
 
 const bulkDeleteProducts = async (req, res) => {
     try {
@@ -423,4 +496,4 @@ const checkCartAvailability = async (req, res) => {
     }
 }
 
-module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability, bulkDeleteProducts }
+module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability, bulkDeleteProducts, bulkPreviewProducts }
