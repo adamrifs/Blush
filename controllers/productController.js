@@ -10,6 +10,19 @@ const cleanNumber = (value) => {
     return cleaned === "" ? NaN : Number(cleaned);
 };
 
+const normalizeBoolean = (value) => {
+    if (typeof value === "boolean") return value;
+
+    if (typeof value === "string") {
+        return value.toLowerCase() === "true";
+    }
+
+    if (typeof value === "number") {
+        return value === 1;
+    }
+
+    return false;
+};
 
 // categories allowed by your schema
 const ALLOWED_CATEGORIES = [
@@ -295,7 +308,15 @@ const bulkUploadProducts = async (req, res) => {
                     `Description for ${name}`;
 
                 const imageValue = row.image || row.Image;
-                
+
+                const isFeatured = normalizeBoolean(
+                    row.is_featured || row.Is_featured || row["Is featured"]
+                );
+
+                const inStockFromFile = normalizeBoolean(
+                    row.in_stock || row.In_stock || row["In stock?"]
+                );
+
                 validProducts.push({
                     name,
                     slug: slugify(name, { lower: true, strict: true }),
@@ -304,7 +325,11 @@ const bulkUploadProducts = async (req, res) => {
                     price,
                     regularPrice,
                     stock,
-                    inStock: stock > 0,
+
+                    // ✅ FIXED BOOLEAN LOGIC
+                    isFeatured,
+                    inStock: inStockFromFile ?? stock > 0,
+
                     description,
                     category,
                     occasions: row.occasions || "General",
@@ -317,9 +342,9 @@ const bulkUploadProducts = async (req, res) => {
                         ? imageValue.split(",").map(img => img.trim())
                         : [],
 
-
                     addons: row.addons ? JSON.parse(row.addons) : []
                 });
+
 
             } catch (err) {
                 skippedRows.push({
