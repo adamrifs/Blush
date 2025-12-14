@@ -10,14 +10,6 @@ const cleanNumber = (value) => {
     return cleaned === "" ? NaN : Number(cleaned);
 };
 
-const slugify = (text) =>
-    text
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w\-]+/g, "");
-
 const addProduct = async (req, res) => {
     try {
         const {
