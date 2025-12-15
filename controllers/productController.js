@@ -291,8 +291,8 @@ const bulkUploadProducts = async (req, res) => {
                 if (!name) throw new Error("Missing product name");
 
                 // ---- PRICE HANDLING (SAFE) ----
-                const salePrice = cleanNumber(row.sale_price || row.Sale_price);
-                const regularPriceRaw = cleanNumber(row.regular_price || row.Regular_price);
+                const salePrice = cleanNumber(row.sale_price || row.SalePrice);
+                const regularPriceRaw = cleanNumber(row.regular_price || row.RegularPrice);
                 const fallbackPrice = cleanNumber(row.price);
 
                 // final selling price
@@ -305,7 +305,7 @@ const bulkUploadProducts = async (req, res) => {
 
                 if (isNaN(price)) {
                     throw new Error(
-                        `Missing price (sale_price / regular_price)`
+                        `Missing price (sale price / regular price)`
                     );
                 }
 
@@ -504,7 +504,7 @@ const exportProductsExcel = async (req, res) => {
             Name: p.name,
             SKU: p.sku || "",
             Category: p.category,
-            Price: p.price,
+            SalePrice: p.price,
             RegularPrice: p.regularPrice,
             Stock: p.stock,
             InStock: p.inStock ? "Yes" : "No",
