@@ -348,7 +348,7 @@ const bulkUploadProducts = async (req, res) => {
                 );
 
                 const inStockFromFile = normalizeBoolean(
-                    row.in_stock || row.In_stock || row["In stock?"]
+                    row.in_stock || row.In_stock || row["In stock?"] || row.InStock
                 );
 
                 validProducts.push({
