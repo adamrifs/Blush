@@ -24,27 +24,59 @@ const normalizeBoolean = (value) => {
     return false;
 };
 
-// categories allowed by your schema
+// categories allowed by schema
 const ALLOWED_CATEGORIES = [
     "Bouquet",
-    "Hand Bouquet",
+    "Bouquet in Bag",
+    "Box Arrangements",
     "Cake",
+    "Cakes and Flowers",
+    "Chocolate",
+    "Chocolate and Flowers",
     "Combo Deals",
+    "Flowers",
     "Forever Flowers",
+    "Fresh Cakes",
     "Flower Basket",
     "Fruits and Flowers",
+    "Hand Bouquet",
+    "Mini Bag Arrangements",
     "Mini Bouquet",
-    "Vase Arrangements",
-    "Plants"
+    "Necklace",
+    "Plants",
+    "Vase Arrangements"
 ];
 
-// normalize WooCommerce / random categories
+
 const normalizeCategory = (value) => {
     if (!value) return "Bouquet";
-    return ALLOWED_CATEGORIES.includes(value)
-        ? value
+
+    // Split categories from Excel
+    const parts = String(value)
+        .split(",")
+        .map(v => v.trim())
+        .filter(v => v.toLowerCase() !== "all products");
+
+    if (!parts.length) return "Bouquet";
+
+    let category = parts[0];
+
+    // FIX naming mismatches
+    const CATEGORY_MAP = {
+        "Vase Arrangement": "Vase Arrangements",
+        "Cake Arrangement": "Cake",
+        "Bouquets": "Bouquet"
+    };
+
+    if (CATEGORY_MAP[category]) {
+        category = CATEGORY_MAP[category];
+    }
+
+    return ALLOWED_CATEGORIES.includes(category)
+        ? category
         : "Bouquet";
 };
+
 
 // normalize product type
 const normalizeType = (value) => {
