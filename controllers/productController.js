@@ -11,18 +11,20 @@ const cleanNumber = (value) => {
 };
 
 const normalizeBoolean = (value) => {
+    if (value === undefined || value === null) return false;
+
     if (typeof value === "boolean") return value;
 
-    if (typeof value === "string") {
-        return value.toLowerCase() === "true";
-    }
+    if (typeof value === "number") return value === 1;
 
-    if (typeof value === "number") {
-        return value === 1;
+    if (typeof value === "string") {
+        const v = value.trim().toLowerCase();
+        return ["true", "yes", "1", "y", "featured"].includes(v);
     }
 
     return false;
 };
+
 
 // categories allowed by schema
 const ALLOWED_CATEGORIES = [
@@ -291,8 +293,8 @@ const bulkUploadProducts = async (req, res) => {
                 if (!name) throw new Error("Missing product name");
 
                 // ---- PRICE HANDLING (SAFE) ----
-                const salePrice = cleanNumber(row.sale_price || row.SalePrice);
-                const regularPriceRaw = cleanNumber(row.regular_price || row.RegularPrice);
+                const salePrice = cleanNumber(row.sale_price || row.Sale_price || row.SalePrice);
+                const regularPriceRaw = cleanNumber(row.regular_price || row.Regular_price || row.RegularPrice);
                 const fallbackPrice = cleanNumber(row.price);
 
                 // final selling price
@@ -305,7 +307,7 @@ const bulkUploadProducts = async (req, res) => {
 
                 if (isNaN(price)) {
                     throw new Error(
-                        `Missing price (sale price / regular price)`
+                        `Missing price (sale_price / regular_price)`
                     );
                 }
 
@@ -342,7 +344,7 @@ const bulkUploadProducts = async (req, res) => {
                 const imageValue = row.image || row.Image;
 
                 const isFeatured = normalizeBoolean(
-                    row.is_featured || row.Is_featured || row["Is featured"]
+                    row.is_featured || row.Is_featured || row["Is featured"] || row.Featured
                 );
 
                 const inStockFromFile = normalizeBoolean(
@@ -357,23 +359,17 @@ const bulkUploadProducts = async (req, res) => {
                     price,
                     regularPrice,
                     stock,
-
-                    // ✅ FIXED BOOLEAN LOGIC
                     isFeatured,
                     inStock: inStockFromFile ?? stock > 0,
-
                     description,
                     category,
                     occasions: row.occasions || "General",
-
                     availableIn: row.availableIn
                         ? row.availableIn.split(",").map(e => e.trim())
                         : undefined,
-
                     image: imageValue
                         ? imageValue.split(",").map(img => img.trim())
                         : [],
-
                     addons: row.addons ? JSON.parse(row.addons) : []
                 });
 
@@ -512,7 +508,7 @@ const exportProductsExcel = async (req, res) => {
             Type: p.type,
             Occasions: p.occasions,
             AvailableIn: (p.availableIn || []).join(", "),
-            Images: (p.image || []).join(", "),
+            Image: (p.image || []).join(", "),
             Description: p.description
         }));
 
@@ -615,4 +611,4 @@ const checkCartAvailability = async (req, res) => {
     }
 }
 
-module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability, bulkDeleteProducts, bulkPreviewProducts ,exportProductsExcel}
+module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability, bulkDeleteProducts, bulkPreviewProducts, exportProductsExcel }
