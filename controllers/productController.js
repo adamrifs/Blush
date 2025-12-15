@@ -363,13 +363,9 @@ const bulkUploadProducts = async (req, res) => {
                     inStock: inStockFromFile ?? stock > 0,
                     description,
                     category,
-                    occasions: row.occasions || "General",
-                    availableIn: row.availableIn
-                        ? row.availableIn.split(",").map(e => e.trim())
-                        : undefined,
-                    image: imageValue
-                        ? imageValue.split(",").map(img => img.trim())
-                        : [],
+                    occasions: row.occasions || row.Occasions || "General",
+                    availableIn: row.AvailableIn ? row.AvailableIn.split(",").map(e => e.trim()) : undefined,
+                    image: imageValue ? imageValue.split(",").map(img => img.trim()) : [],
                     addons: row.addons ? JSON.parse(row.addons) : []
                 });
 
