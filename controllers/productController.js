@@ -496,6 +496,53 @@ const bulkDeleteProducts = async (req, res) => {
     }
 };
 
+const exportProductsExcel = async (req, res) => {
+    try {
+        const products = await Product.find().lean();
+
+        const excelData = products.map(p => ({
+            Name: p.name,
+            SKU: p.sku || "",
+            Category: p.category,
+            Price: p.price,
+            RegularPrice: p.regularPrice,
+            Stock: p.stock,
+            InStock: p.inStock ? "Yes" : "No",
+            Featured: p.isFeatured ? "Yes" : "No",
+            Type: p.type,
+            Occasions: p.occasions,
+            AvailableIn: (p.availableIn || []).join(", "),
+            Images: (p.image || []).join(", "),
+            Description: p.description
+        }));
+
+        const workbook = xlsx.utils.book_new();
+        const worksheet = xlsx.utils.json_to_sheet(excelData);
+
+        xlsx.utils.book_append_sheet(workbook, worksheet, "Products");
+
+        const buffer = xlsx.write(workbook, {
+            type: "buffer",
+            bookType: "xlsx"
+        });
+
+        res.setHeader(
+            "Content-Disposition",
+            "attachment; filename=products.xlsx"
+        );
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.send(buffer);
+
+    } catch (error) {
+        console.error("Export error:", error);
+        res.status(500).json({ message: "Failed to export products" });
+    }
+};
+
 const getProductsByEmirate = async (req, res) => {
     try {
         const emirate = req.query.emirate
@@ -568,4 +615,4 @@ const checkCartAvailability = async (req, res) => {
     }
 }
 
-module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability, bulkDeleteProducts, bulkPreviewProducts }
+module.exports = { addProduct, getProduct, singleProduct, editProduct, deleteProduct, bulkUploadProducts, getProductsByEmirate, checkCartAvailability, bulkDeleteProducts, bulkPreviewProducts ,exportProductsExcel}
