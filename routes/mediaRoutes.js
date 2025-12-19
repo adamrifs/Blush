@@ -10,7 +10,7 @@ const upload = multer({ dest: "uploads/" });
 
 router.post(
     "/upload",
-    upload.array("images", 50),
+    upload.array("images", 100),
     uploadBulkImages
 );
 router.get("/all", getAllMedia);
