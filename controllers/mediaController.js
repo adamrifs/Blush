@@ -46,10 +46,11 @@ exports.getAllMedia = async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
+    const sortOrder = req.query.sort === "desc" ? -1 : 1;
     const total = await Media.countDocuments();
 
     const media = await Media.find()
-      .sort({ createdAt: -1 })
+      .sort({ originalName: sortOrder })
       .skip(skip)
       .limit(limit);
 
