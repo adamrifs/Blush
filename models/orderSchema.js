@@ -56,6 +56,16 @@ const orderSchema = new mongoose.Schema({
         type: String,
         enum: ["pending", "processing", "out_for_delivery", "delivered", "cancelled"],
         default: "pending"
+    },
+    cardMessage: {
+        option: {
+            type: String,
+            enum: ["want_card", "empty_card", "no_card"],
+            default: "no_card"
+        },
+        messageHTML: String,
+        messageText: String,
+        template: String
     }
 
 }, { timestamps: true });

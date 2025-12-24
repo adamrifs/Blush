@@ -25,17 +25,25 @@ const sendPushNotification = async (subscription, payload) => {
 // CREATE ORDER
 exports.createOrder = async (req, res) => {
     try {
-        // 1️⃣ Create order
+        if (!req.body.cardMessage) {
+            req.body.cardMessage = {
+                option: "no_card",
+                messageHTML: "",
+                messageText: "",
+                template: ""
+            };
+        }
+        //  Create order
         const order = new Order(req.body);
         await order.save();
 
-        // 2️⃣ Fetch ALL admin settings (each admin has own toggles)
+        //  Fetch ALL admin settings (each admin has own toggles)
         const admins = await AdminSettings.find();
 
-        // 3️⃣ Load socket.io instance
+        //  Load socket.io instance
         const io = req.app.locals.io;
 
-        // 4️⃣ Notify all admins based on their settings
+        //  Notify all admins based on their settings
         for (const settings of admins) {
 
             // ==========================
@@ -56,11 +64,17 @@ exports.createOrder = async (req, res) => {
             // ==========================
             if (settings.emailEnabled && settings.email) {
                 const html = `
-                    <h2>New Order Received</h2>
-                    <p><strong>Order ID:</strong> ${order._id}</p>
-                    <p><strong>Total:</strong> ${order.total || "N/A"}</p>
-                    <p>A new order has been placed on your store.</p>
-                `;
+    <h2>New Order Received</h2>
+    <p><strong>Order ID:</strong> ${order._id}</p>
+    <p><strong>Total:</strong> ${order.total || "N/A"}</p>
+
+    ${order.cardMessage?.option === "want_card" ?
+          `<hr/>
+          <h3>Card Message</h3>
+          <p><strong>Template:</strong> ${order.cardMessage.template}</p>
+          <div>${order.cardMessage.messageHTML}</div>`
+           : ""}
+          <p>A new order has been placed on your store.</p>`;
 
                 await sendEmail(
                     settings.email,
@@ -72,7 +86,7 @@ exports.createOrder = async (req, res) => {
             }
         }
 
-        // 5️⃣ Legacy push system (optional)
+        //  Legacy push system (optional)
         const admin = await Admin.findOne();
         if (admin?.subscription) {
             await webPush.sendNotification(
@@ -84,7 +98,7 @@ exports.createOrder = async (req, res) => {
             );
         }
 
-        // 6️⃣ Final response
+        //  Final response
         res.status(201).json({
             success: true,
             message: "Order created successfully",
