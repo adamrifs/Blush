@@ -1,0 +1,1 @@
+export const serverUrl = "https://blush-98xm.onrender.com/api"

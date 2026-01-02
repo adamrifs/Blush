@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Orbitron:wght@400..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+@import "tailwindcss";
+@import "slick-carousel/slick/slick.css";
+@import "slick-carousel/slick/slick-theme.css";
+
+@font-face {
+  font-family: 'Chopard';
+  src: url('./assets/fonts/Chopard-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Chopard';
+  src: url('./assets/fonts/Chopard-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'PPNeueMachina';
+  src: url('./assets/fonts/PPNeueMachina-InktrapRegular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+@theme {
+  --font-chopard: Chopard, "sans-serif";
+  --font-PPNeueMachina: PPNeueMachina, "sans-serif";
+  --font-montserrat: Montserrat, sans-serif;
+  --font-Poppins: Poppins, "sans-serif";
+  --font-Roboto: Roboto, "sans-serif";
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+.swiper-pagination-bullet {
+  background-color: #d1d1d1 !important;
+  /* inactive color */
+  opacity: 1 !important;
+}
+
+.swiper-pagination-bullet-active {
+  background-color: #000 !important;
+  /* active dot color */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+/* ______________ toast animations  */
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0px);
+  }
+}
+
+.animate-slideDownFade {
+  animation: slideDownFade 0.4s ease-out forwards;
+}
+
+/* product price save animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.35s ease-out;
+}

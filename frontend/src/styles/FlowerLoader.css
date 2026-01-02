@@ -1,0 +1,107 @@
+/* MinimalPremiumLoader.css */
+
+.premium-loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner-orbit {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border: 1px solid rgba(15, 112, 138, 0.1);
+    border-radius: 50%;
+}
+
+.spinner-orbit::after {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid transparent;
+    border-top-color: #0f708a;
+    border-right-color: #b89bff;
+    border-radius: 50%;
+    animation: premium-spin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+}
+
+@keyframes premium-spin {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    50% {
+        transform: rotate(180deg) scale(0.9);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+.minimal-text {
+    margin-top: 24px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 300;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    color: #1a1a1a;
+    text-transform: uppercase;
+}
+
+/* 🌸 Premium petal base */
+.petal {
+    position: absolute;
+    pointer-events: none;
+    background: linear-gradient(135deg,
+            rgba(255, 230, 245, 0.9),
+            rgba(184, 155, 255, 0.55),
+            rgba(15, 112, 138, 0.25));
+    border-radius: 60% 40% 70% 30% / 60% 70% 30% 40%;
+    box-shadow:
+        inset -4px -6px 10px rgba(255, 255, 255, 0.35),
+        inset 4px 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 🌫 FAR petals */
+.petal-far {
+    width: 22px;
+    height: 30px;
+    filter: blur(2.5px);
+    opacity: 0.35;
+}
+
+/* 🌸 NEAR petals */
+.petal-near {
+    width: 38px;
+    height: 52px;
+    filter: blur(0.5px);
+    opacity: 0.85;
+}
+
+.petal {
+    position: absolute;
+    pointer-events: none;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .petal {
+        box-shadow: none;
+    }
+
+    .petal-far {
+        filter: blur(1.5px);
+    }
+
+    .petal-near {
+        filter: blur(0.5px);
+    }
+}
