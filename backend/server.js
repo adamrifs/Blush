@@ -7,6 +7,8 @@ const userRoutes = require('./routes/userRoutes.js')
 const cartRoutes = require('./routes/cartRoutes.js')
 const addressRoutes = require('./routes/addressRoutes.js')
 const paymobRoutes = require("./routes/paymobRoutes.js");
+const paymentRoutes = require('./routes/paymentRoutes.js')
+const webhookRoutes = require('./routes/webhookRoutes.js')
 const orderRoutes = require('./routes/orderRoutes.js');
 const pushRoutes = require('./routes/pushRoutes.js')
 const customerRoutes = require('./routes/customerRoutes.js')
@@ -25,7 +27,13 @@ const { Server } = require('socket.io');
 const app = express()
 app.set("trust proxy", 1);
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'https://blush-beige.vercel.app', 'https://blush-adminpannel.vercel.app'],
+    origin: [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'https://www.blushflowers.ae',
+        'https://blushflowers.ae'
+    ],
     credentials: true
 }))
 app.use(express.json())
@@ -43,6 +51,8 @@ app.use('/api/user', userRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/address', addressRoutes)
 app.use("/api/payment/paymob", paymobRoutes);
+app.use("/api/payment", paymentRoutes)
+app.use("/webhooks", webhookRoutes);
 app.use('/api/orders', orderRoutes);
 app.use("/api/push", pushRoutes);
 app.use('/api/customers', customerRoutes);
@@ -57,7 +67,7 @@ const io = new Server(server, {
         methods: ["GET", "POST"],
         allowedHeaders: ["Content-Type"]
     },
-    transports: ["polling", "websocket"], 
+    transports: ["polling", "websocket"],
     allowEIO3: true,
     path: "/socket.io"
 });

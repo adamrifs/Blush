@@ -35,7 +35,7 @@ const Register = ({ setIsAuth }) => {
             );
 
             toast.update(toastId, {
-                render: "Signup successful 🎉",
+                render: "Signup successful ",
                 type: "success",
                 isLoading: false,
                 autoClose: 2000,
@@ -77,7 +77,7 @@ const Register = ({ setIsAuth }) => {
             setIsAuth(true);
 
             toast.update(toastId, {
-                render: "Login successful ✅",
+                render: "Login successful ",
                 type: "success",
                 isLoading: false,
                 autoClose: 1500,

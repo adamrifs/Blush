@@ -58,6 +58,8 @@ const MyOrders = () => {
         }
     };
 
+    // console.log(orders)
+
     useEffect(() => {
         if (userId) fetchOrders();
     }, [userId]);

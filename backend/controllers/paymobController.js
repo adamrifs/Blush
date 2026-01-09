@@ -1,8 +1,9 @@
 const axios = require("axios");
+const Order = require("../models/orderSchema");
 
-// ------------------------------------------
-// 1. AUTH TOKEN
-// ------------------------------------------
+/* ------------------------------
+   1️⃣ Get Auth Token
+--------------------------------*/
 const getAuthToken = async () => {
   const { data } = await axios.post(
     "https://accept.paymob.com/api/auth/tokens",
@@ -13,10 +14,10 @@ const getAuthToken = async () => {
   return data.token;
 };
 
-// ------------------------------------------
-// 2. ORDER REGISTRATION
-// ------------------------------------------
-const createOrder = async (authToken, amount, merchantOrderId) => {
+/* ------------------------------
+   2️⃣ Create Paymob Order
+--------------------------------*/
+const createPaymobOrder = async (authToken, amount, merchantOrderId) => {
   const { data } = await axios.post(
     "https://accept.paymob.com/api/ecommerce/orders",
     {
@@ -31,51 +32,73 @@ const createOrder = async (authToken, amount, merchantOrderId) => {
   return data.id;
 };
 
-
-// ------------------------------------------
-// 3. PAYMENT KEY
-// ------------------------------------------
-const getPaymentKey = async (authToken, orderId, amount, integrationId) => {
+/* ------------------------------
+   3️⃣ Payment Key
+--------------------------------*/
+const getPaymentKey = async (
+  authToken,
+  paymobOrderId,
+  amount,
+  integrationId
+) => {
   const { data } = await axios.post(
     "https://accept.paymob.com/api/acceptance/payment_keys",
     {
       auth_token: authToken,
       amount_cents: amount * 100,
-      order_id: orderId,
+      order_id: paymobOrderId,
       currency: "AED",
+      integration_id: integrationId,
       billing_data: {
-        email: "customer@example.com",
-        first_name: "User",
-        last_name: "Checkout",
+        email: "customer@blush.com",
+        first_name: "Blush",
+        last_name: "Customer",
         phone_number: "+971000000000",
         apartment: "NA",
         floor: "NA",
         street: "NA",
         building: "NA",
         shipping_method: "NA",
-        postal_code: "NA",
+        postal_code: "00000",
         city: "Dubai",
         country: "AE",
         state: "Dubai",
       },
-      integration_id: integrationId,
     }
   );
+
   return data.token;
 };
 
-// ------------------------------------------
-// 4. CREDIT CARD PAYMENT
-// ------------------------------------------
+/* ------------------------------
+   4️⃣ CARD PAYMENT
+--------------------------------*/
 exports.paymobCard = async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, orderPayload } = req.body;
 
+    // 1️⃣ Create LOCAL order (PENDING)
+    const order = await Order.create({
+      ...orderPayload,
+      payment: {
+        ...orderPayload.payment,
+        method: "card",
+        status: "pending",
+        transactionId: null,
+      },
+    });
+
+    // 2️⃣ Paymob flow
     const authToken = await getAuthToken();
-    const orderId = await createOrder(authToken, amount);
+    const paymobOrderId = await createPaymobOrder(
+      authToken,
+      amount,
+      order._id.toString()
+    );
+
     const paymentKey = await getPaymentKey(
       authToken,
-      orderId,
+      paymobOrderId,
       amount,
       process.env.PAYMOB_INTEGRATION_ID_CARD
     );
@@ -83,33 +106,58 @@ exports.paymobCard = async (req, res) => {
     const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey}`;
 
     res.json({ redirect_url: iframeUrl });
-  } catch (err) {
-    console.log(err.response?.data || err);
-    res.status(500).json({ error: "Paymob card payment error" });
+  } catch (error) {
+    console.log(" PAYMOB ERROR FULL:", error.response?.data || error);
+    return res.status(500).json({
+      error: "Paymob card payment error",
+      details: error.response?.data || error.message,
+    });
   }
+
 };
 
-// ------------------------------------------
-// 5. APPLE PAY PAYMENT
-// ------------------------------------------
+/* ------------------------------
+   5️⃣ APPLE PAY
+--------------------------------*/
 exports.paymobApplePay = async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, orderPayload } = req.body;
+
+    // ✅ CREATE LOCAL ORDER (PENDING) – KEEP REQUIRED FIELDS
+    const order = await Order.create({
+      ...orderPayload,
+      payment: {
+        ...orderPayload.payment,   // 🔥 KEEP amount & vat
+        method: "applepay",
+        status: "pending",
+        transactionId: null,
+      },
+    });
 
     const authToken = await getAuthToken();
-    const orderId = await createOrder(authToken, amount);
+
+    const paymobOrderId = await createPaymobOrder(
+      authToken,
+      amount,
+      order._id.toString()
+    );
+
     const paymentKey = await getPaymentKey(
       authToken,
-      orderId,
+      paymobOrderId,
       amount,
       process.env.PAYMOB_INTEGRATION_ID_APPLEPAY
     );
 
     res.json({
-      redirect_url: `https://accept/paymob.com/api/acceptance/payments/pay?payment_token=${paymentKey}`,
+      redirect_url: `https://accept.paymob.com/api/acceptance/payments/pay?payment_token=${paymentKey}`,
     });
-  } catch (err) {
-    console.log(err.response?.data || err);
-    res.status(500).json({ error: "Paymob Apple Pay error" });
+  } catch (error) {
+    console.error("Paymob ApplePay Error:", error.response?.data || error);
+    return res.status(500).json({
+      error: "Paymob ApplePay error",
+      details: error.response?.data || error.message,
+    });
   }
 };
+

@@ -48,7 +48,7 @@ const BestLoved = () => {
     }
 
     return (
-        <div className='w-[100vw] mt-10 md:mt-10'>
+        <div className='w-[100vw] mt-0 md:mt-5'>
             <div className='flex md:w-[100%] items-center justify-between md:px-20 px-5 pb-3'>
                 <h2 className='font-chopard md:text-[40px] text-[20px] '>Our Best-Loved</h2>
             </div>
@@ -76,7 +76,7 @@ const BestLoved = () => {
                     </motion.div>
                 ))}
             </motion.div>
-            <div className='w-[90%] h-[1px] bg-gray-200 rounded-full absolute left-1/2 -translate-1/2 my-5 md:my-5'></div>
+            <div className='w-[90%] h-[1px] bg-gray-200 rounded-full absolute left-1/2 -translate-1/2 my-5 md:my-5 mt-8'></div>
         </div>
     )
 }

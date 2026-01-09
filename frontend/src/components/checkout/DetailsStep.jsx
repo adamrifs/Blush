@@ -32,6 +32,17 @@ const DetailsStep = ({
     setCardMessageData,
 }) => {
 
+    const [cardOptionError, setCardOptionError] = React.useState("");
+    const validateCardOption = () => {
+        if (!cardOption) {
+            setCardOptionError("Please select a card option to continue");
+            return false;
+        }
+
+        setCardOptionError("");
+        return true;
+    };
+
     const getCardMessageData = () => {
         if (cardOption !== "want_card") {
             return {
@@ -163,6 +174,12 @@ const DetailsStep = ({
                 <h1 className='font-Poppins text-2xl text-center font-medium mb-8'>
                     Card Message.
                 </h1>
+
+                {cardOptionError && (
+                    <p className="text-red-500 text-sm text-center mb-4">
+                        {cardOptionError}
+                    </p>
+                )}
 
                 {/* -------- Option 1 -------- */}
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -370,11 +387,14 @@ const DetailsStep = ({
             <button
                 type="button"
                 onClick={() => {
-                    if (validateDetails()) {
+                    const isDetailsValid = validateDetails();
+                    const isCardSelected = validateCardOption();
+
+                    if (isDetailsValid && isCardSelected) {
                         setCardMessageData(getCardMessageData());
                         setCurrentStep("shipping");
+                        window.scrollTo(0, 0);
                     }
-                    window.scrollTo(0, 0)
                 }}
                 className="w-full mt-10 py-3 rounded-full text-white text-lg font-medium
           bg-gradient-to-r from-[#b89bff] to-[#d6b8ff]

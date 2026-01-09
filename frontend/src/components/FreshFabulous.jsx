@@ -150,7 +150,7 @@ const FreshFabulous = () => {
             </div>
           </motion.div>
 
-          <div className="w-[90%] md:w-[70%] h-px bg-gray-200 mx-auto my-10" />
+          <div className="w-[90%] md:w-[70%] h-px bg-gray-200 mx-auto my-10 mb-5" />
         </div>
       )}
     </div>

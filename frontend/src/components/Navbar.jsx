@@ -403,7 +403,7 @@ const Navbar = () => {
                 </span>
               )
             }
-            <p className='font-montserrat text-[18px]'>Bag</p>
+            <p className='font-montserrat text-[18px]'>Basket</p>
           </div>
         </div>
       </div>

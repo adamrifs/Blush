@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import { IoClose } from "react-icons/io5";
 import api from '../utils/axiosInstance.js';
 import CategoryNav from '../components/CategoryNav.jsx';
+import Footer from '../components/Footer.jsx';
 
 const ProductListing = () => {
     const location = useLocation()
@@ -258,8 +259,8 @@ const ProductListing = () => {
 
                             <div className='md:grid md:grid-cols-[250px_1fr] flex flex-col items-start justify-start md:gap-6 gap-3 mt-4'>
                                 {/* ________________ side filters ______________________ */}
-                                <Sticky enabled={true} top={10} innerZ={10}>
-                                    <div className='sidefilter relative z-[1] md:w-[250px] w-[345px] h-[40px] md:h-auto bg-[#f3f3f4] md:bg-transparent p-2 rounded-[6px] md:block flex border-b-gray-300'
+                                
+                                    <div className='sidefilter relative z-[1] md:w-[250px] w-full h-[40px] md:h-auto bg-[#f3f3f4] md:bg-transparent p-2 rounded-[6px] md:block flex border-b-gray-300'
                                     >
                                         {/* _______ filter open on mobile screen */}
                                         <h1 className='flex items-center justify-between w-full px-2 gap-5 font-montserrat md:text-xl font-medium' onClick={() => setFilterOpen(!filterOpen)}>Filter <RiEqualizer3Line /></h1>
@@ -285,11 +286,11 @@ const ProductListing = () => {
                                                 option={["Under 250 AED", "250 AED to 500 AED", "500 AED to 750 AED", "Over 750 AED"]} />
                                         </div>
                                     </div>
-                                </Sticky>
+                                
                                 {/* ____________ mobile filter option display _____________  */}
                                 {
                                     filterOpen && (
-                                        <div className='md:hidden block w-[88vw] h-auto fixed top-[305px] left-1/2 -translate-x-1/2  bg-white rounded-[6px] z-[9999] shadow-lg animate-fadeIn p-4 max-h-[80vh] overflow-y-auto '>
+                                        <div className='md:hidden block w-[88vw] h-auto absolute top-[400px] left-1/2 -translate-x-1/2  bg-white rounded-[6px] z-[9999] shadow-lg animate-fadeIn p-4 max-h-[80vh] overflow-y-auto '>
                                             {/* category */}
                                             <div className='category md:hidden block '>
                                                 <FilterDropDown
@@ -538,6 +539,7 @@ const ProductListing = () => {
                     </div>
                 )}
             </div>
+            <Footer/>
         </div>
     )
 }

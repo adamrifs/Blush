@@ -279,7 +279,7 @@ const Product = () => {
                             <button
                                 disabled={addingToCart}
                                 onClick={() => addToCart(product._id)}
-                                className={`py-3 md:py-4 bg-gradient-to-r from-[#b89bff] to-[#d6b8ff] border border-[#bca8ff] shadow-[0_2px_8px_rgba(0,0,0,0.1)] hover:from-[#a27aff] hover:to-[#cda5ff] hover:shadow-[0_4px_14px_rgba(107,70,193,0.3)] text-white font-Poppins font-normal text-[15px] tracking-wide rounded-[12px] transition-all duration-300 ease-in-out active:scale-95 flex items-center justify-center gap-3 cursor-pointer fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] sm:w-[90%] md:static md:translate-x-0 md:w-full z-9999}`
+                                className={`py-3 md:py-4 bg-gradient-to-r from-[#b89bff] to-[#d6b8ff] border border-[#bca8ff] shadow-[0_2px_8px_rgba(0,0,0,0.1)] hover:from-[#a27aff] hover:to-[#cda5ff] hover:shadow-[0_4px_14px_rgba(107,70,193,0.3)] text-white font-Poppins font-normal text-[15px] tracking-wide rounded-[12px] transition-all duration-300 ease-in-out active:scale-95 flex items-center justify-center gap-3 cursor-pointer  w-full sm:w-full md:static md:translate-x-0 md:w-full z-9999}`
                                 }
                             >
                                 {addingToCart ? (
@@ -346,7 +346,7 @@ const Product = () => {
                 </div>
 
                 {/* Suggested Products Section */}
-                <div className='w-full h-auto mt-12 mb-10'>
+                <div className='w-full h-auto mt-12 mb-10 '>
                     <h2 className='font-Poppins text-[20px] sm:text-[22px] md:text-[26px] mb-6 px-2 md:px-4 text-black'>
                         People also viewed
                     </h2>
@@ -363,7 +363,7 @@ const Product = () => {
                                 640: { slidesPerView: 2.2 },
                                 1024: { slidesPerView: 4 },
                             }}
-                            className='px-2 md:px-4 touch-pan-y'
+                            className='px-2 md:px-4 touch-pan-y -z-10'
                         >
                             {products
                                 .filter(
@@ -374,7 +374,7 @@ const Product = () => {
                                 .map((item) => (
                                     <SwiperSlide
                                         key={item._id}
-                                        className="group mb-4 touch-pan-y"
+                                        className="group mb-4 touch-pan-y "
                                     >
                                         <Link
                                             to={`/product/${item.slug}`}

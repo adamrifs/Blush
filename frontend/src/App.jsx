@@ -27,6 +27,7 @@ import ErrorBoundary from "./components/error/ErrorBoundary"
 import PaymentSuccess from "./pages/PaymentSuccess"
 import PaymentFailed from "./pages/PaymentFailed"
 import StoreLocation from "./pages/StoreLocation"
+import PaymentStatus from "./pages/PaymentStatus"
 
 
 function App() {
@@ -61,8 +62,9 @@ function App() {
           <Route path="/delivery-policy" element={<DeliveryPolicy />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/store-location" element={<StoreLocation />} />
-          <Route path="/payment-success" element={<PaymentSuccess/>} />
-          <Route path="/payment-failed" element={<PaymentFailed/>} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
+          <Route path="/payment/status" element={<PaymentStatus />} />
           <Route path="*" element={<ErrorPage />} />
         </Routes>
       </ErrorBoundary>

@@ -100,118 +100,179 @@ const PaymentStep = ({
 
 
     // _____________________________________ payments ____________________________________________________________\
-    // const handlePayment = async () => {
-    //     try {
-    //         if (!agree) {
-    //             showToast("Please agree to Terms & Conditions", "warning");
-    //             return;
-    //         }
-
-    //         const amount = Number(grandTotalDisplay);
-
-    //         const endpoint =
-    //             method === "card"
-    //                 ? `${serverUrl}/payment/paymob/card`
-    //                 : `${serverUrl}/payment/paymob/applepay`;
-
-    //         showToast("Redirecting to secure payment…", "info");
-
-    //         const res = await api.post(endpoint, { amount });
-
-    //         window.location.href = res.data.redirect_url;
-    //     } catch (err) {
-    //         console.error(err);
-    //         showToast("Payment initialization failed", "error");
-    //     }
-    // };
-
-
-
-    // ___________________________ create order _________________________________
-    const createOrder = async () => {
+    const handlePayment = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            const userId = user?._id;
             if (!agree) {
                 showToast("Please agree to Terms & Conditions", "warning");
                 return;
             }
-            if (!userId) {
+
+            if (method === "tabby" ||method === "tamara") {
+                showToast("This payment method will be available soon", "info");
+                return;
+            }
+
+            const user = JSON.parse(localStorage.getItem("user"));
+            if (!user?._id) {
                 showToast("Please login to continue", "warning");
                 return;
             }
 
-            // Build order payload exactly as backend schema expects
-            const payload = {
-                userId: userId,
+            let endpoint = "";
 
-                // CART ITEMS
+            if (method === "card") {
+                endpoint = `${serverUrl}/payment/paymob/card`;
+            } else if (method === "applepay") {
+                endpoint = `${serverUrl}/payment/paymob/applepay`;
+            } else if (method === "tabby") {
+                endpoint = `${serverUrl}/payment/tabby`;
+            } else if (method === "tamara") {
+                endpoint = `${serverUrl}/payment/tamara`;
+            } else {
+                showToast("Invalid payment method", "error");
+                return;
+            }
+
+
+            const orderPayload = {
+                userId: user._id,
+
                 items: cart.map((item) => ({
-
                     productId: item.productId._id,
                     quantity: item.quantity,
-                    addons: item.addons || []
+                    addons: item.addons || [],
                 })),
 
-                // SHIPPING DETAILS
                 shipping: {
-                    receiverName: receiverName,
-                    receiverPhone: receiverPhone,
-                    country: "United Arab Emirates",
+                    receiverName,
+                    receiverPhone,
                     emirate: deliveryEmirate,
-                    area: area,
-                    street: street,
-                    building: building,
-                    flat: flat,
-                    deliveryDate: deliveryDate,
-                    deliverySlot: deliverySlot?.selectedTime || deliverySlot?.title,
-                    deliveryCharge: deliveryCharge
+                    area,
+                    street,
+                    building,
+                    flat,
+                    deliveryDate,
+                    deliverySlot: deliverySlot?.selectedTime,
+                    deliveryCharge: Number(deliveryExclusiveDisplay),
                 },
 
-                // PAYMENT DETAILS
-                payment: {
-                    method: method,
-                    status: "paid",
-                    transactionId: "TEST123",
-                    orderId: "TEST_ORDER_ID",
-                    amount: Number(grandTotalDisplay),
-                    vat: Number(vatDisplay)
-                },
-
-                // TOTALS
                 totals: {
                     bagTotal: Number(bagTotalInclusiveDisplay),
                     deliveryCharge: Number(deliveryExclusiveDisplay),
                     vatAmount: Number(vatDisplay),
-                    grandTotal: Number(grandTotalDisplay)
+                    grandTotal: Number(grandTotalDisplay),
                 },
-                cardMessage: cardMessageData
 
+                payment: {
+                    amount: Number(grandTotalDisplay),
+                    vat: Number(vatDisplay),
+                },
+
+                cardMessage: cardMessageData,
             };
 
-            // CREATE ORDER API CALL
-            const res = await api.post(`${serverUrl}/orders/create`, payload, {
-                withCredentials: true,
-                showLoader: true,
+            showToast("Redirecting to secure payment…", "info");
+
+            const res = await api.post(endpoint, {
+                amount: Number(grandTotalDisplay),
+                orderPayload,
             });
 
-            const createdOrder = res.data.order;
-
-            await api.delete(`${serverUrl}/cart/clearCart`, {
-                data: { sessionId },
-                withCredentials: true,
-            });
-
-            setCart([]);
-            fetchCartCount();
-            navigate("/order-success", { state: { order: createdOrder } });
-            window.scrollTo(0, 0)
-
+            window.location.href = res.data.redirect_url;
         } catch (error) {
-            console.log(error);
-            showToast("Failed to create order", "error");
+            console.error(error);
+            showToast("Payment initialization failed", "error");
         }
     };
+
+
+
+
+    // ___________________________ create order _________________________________
+    // const createOrder = async () => {
+    //     try {
+    //         const user = JSON.parse(localStorage.getItem("user"));
+    //         const userId = user?._id;
+    //         if (!agree) {
+    //             showToast("Please agree to Terms & Conditions", "warning");
+    //             return;
+    //         }
+    //         if (!userId) {
+    //             showToast("Please login to continue", "warning");
+    //             return;
+    //         }
+
+    //         // Build order payload exactly as backend schema expects
+    //         const payload = {
+    //             userId: userId,
+
+    //             // CART ITEMS
+    //             items: cart.map((item) => ({
+
+    //                 productId: item.productId._id,
+    //                 quantity: item.quantity,
+    //                 addons: item.addons || []
+    //             })),
+
+    //             // SHIPPING DETAILS
+    //             shipping: {
+    //                 receiverName: receiverName,
+    //                 receiverPhone: receiverPhone,
+    //                 country: "United Arab Emirates",
+    //                 emirate: deliveryEmirate,
+    //                 area: area,
+    //                 street: street,
+    //                 building: building,
+    //                 flat: flat,
+    //                 deliveryDate: deliveryDate,
+    //                 deliverySlot: deliverySlot?.selectedTime || deliverySlot?.title,
+    //                 deliveryCharge: deliveryCharge
+    //             },
+
+    //             // PAYMENT DETAILS
+    //             payment: {
+    //                 method: method,
+    //                 status: "paid",
+    //                 transactionId: "TEST123",
+    //                 orderId: "TEST_ORDER_ID",
+    //                 amount: Number(grandTotalDisplay),
+    //                 vat: Number(vatDisplay)
+    //             },
+
+    //             // TOTALS
+    //             totals: {
+    //                 bagTotal: Number(bagTotalInclusiveDisplay),
+    //                 deliveryCharge: Number(deliveryExclusiveDisplay),
+    //                 vatAmount: Number(vatDisplay),
+    //                 grandTotal: Number(grandTotalDisplay)
+    //             },
+    //             cardMessage: cardMessageData
+
+    //         };
+
+    //         // CREATE ORDER API CALL
+    //         const res = await api.post(`${serverUrl}/orders/create`, payload, {
+    //             withCredentials: true,
+    //             showLoader: true,
+    //         });
+
+    //         const createdOrder = res.data.order;
+
+    //         await api.delete(`${serverUrl}/cart/clearCart`, {
+    //             data: { sessionId },
+    //             withCredentials: true,
+    //         });
+
+    //         setCart([]);
+    //         fetchCartCount();
+    //         navigate("/order-success", { state: { order: createdOrder } });
+    //         window.scrollTo(0, 0)
+
+    //     } catch (error) {
+    //         console.log(error);
+    //         showToast("Failed to create order", "error");
+    //     }
+    // };
 
     return (
         <div className="w-full px-4 font-Poppins">
@@ -427,8 +488,8 @@ const PaymentStep = ({
           hover:from-[#a27aff] hover:to-[#cda5ff]
           hover:shadow-[0_4px_14px_rgba(107,70,193,0.3)]
           transition-all duration-300 cursor-pointer"
-                        // onClick={handlePayment}
-                        onClick={createOrder}
+                        onClick={handlePayment}
+                    // onClick={createOrder}
                     >
                         Pay Now (AED {grandTotalDisplay})
                     </button>

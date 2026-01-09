@@ -53,7 +53,7 @@ const CuratedforYou = () => {
     )
 
     return (
-        <div className='w-[100vw] mt-10 md:mt-15'>
+        <div className='w-[100vw] mt-0 md:mt-5'>
             <div className='flex md:w-[100%] items-center justify-between md:px-20 px-5 pb-3'>
                 <h2 className='font-chopard md:text-[40px] text-[20px]'>
                     Curated for You
