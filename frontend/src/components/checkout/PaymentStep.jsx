@@ -99,93 +99,47 @@ const PaymentStep = ({
         "bg-gradient-to-r from-[#b89bff] to-[#d6b8ff] shadow-[0_2px_8px_rgba(0,0,0,0.1)]";
 
 
-    // _____________________________________ payments ____________________________________________________________\
     const handlePayment = async () => {
+        if (!agree) {
+            showToast("Please agree to Terms & Conditions", "warning");
+            return;
+        }
+
         try {
-            if (!agree) {
-                showToast("Please agree to Terms & Conditions", "warning");
-                return;
-            }
-
-            if (method === "tabby" ||method === "tamara") {
-                showToast("This payment method will be available soon", "info");
-                return;
-            }
-
             const user = JSON.parse(localStorage.getItem("user"));
-            if (!user?._id) {
-                showToast("Please login to continue", "warning");
-                return;
-            }
 
-            let endpoint = "";
-
-            if (method === "card") {
-                endpoint = `${serverUrl}/payment/paymob/card`;
-            } else if (method === "applepay") {
-                endpoint = `${serverUrl}/payment/paymob/applepay`;
-            } else if (method === "tabby") {
-                endpoint = `${serverUrl}/payment/tabby`;
-            } else if (method === "tamara") {
-                endpoint = `${serverUrl}/payment/tamara`;
-            } else {
-                showToast("Invalid payment method", "error");
-                return;
-            }
-
-
-            const orderPayload = {
-                userId: user._id,
-
-                items: cart.map((item) => ({
-                    productId: item.productId._id,
-                    quantity: item.quantity,
-                    addons: item.addons || [],
-                })),
-
-                shipping: {
-                    receiverName,
-                    receiverPhone,
-                    emirate: deliveryEmirate,
-                    area,
-                    street,
-                    building,
-                    flat,
-                    deliveryDate,
-                    deliverySlot: deliverySlot?.selectedTime,
-                    deliveryCharge: Number(deliveryExclusiveDisplay),
+            const res = await api.post(
+                `${serverUrl}/payment/create-stripe-session`,
+                {
+                    cart,
+                    totals: {
+                        bagTotal: Number(bagTotalInclusiveDisplay),
+                        deliveryCharge: Number(deliveryExclusiveDisplay),
+                        vatAmount: Number(vatDisplay),
+                        grandTotal: Number(grandTotalDisplay)
+                    },
+                    shipping: {
+                        receiverName,
+                        receiverPhone,
+                        emirate: deliveryEmirate,
+                        area,
+                        street,
+                        building,
+                        flat,
+                        deliveryDate,
+                        deliverySlot: deliverySlot?.title
+                    },
+                    cardMessage: cardMessageData,
+                    userId: user._id
                 },
+                { withCredentials: true }
+            );
 
-                totals: {
-                    bagTotal: Number(bagTotalInclusiveDisplay),
-                    deliveryCharge: Number(deliveryExclusiveDisplay),
-                    vatAmount: Number(vatDisplay),
-                    grandTotal: Number(grandTotalDisplay),
-                },
-
-                payment: {
-                    amount: Number(grandTotalDisplay),
-                    vat: Number(vatDisplay),
-                },
-
-                cardMessage: cardMessageData,
-            };
-
-            showToast("Redirecting to secure payment…", "info");
-
-            const res = await api.post(endpoint, {
-                amount: Number(grandTotalDisplay),
-                orderPayload,
-            });
-
-            window.location.href = res.data.redirect_url;
-        } catch (error) {
-            console.error(error);
-            showToast("Payment initialization failed", "error");
+            window.location.href = res.data.url;
+        } catch (err) {
+            showToast("Stripe payment failed", "error");
         }
     };
-
-
 
 
     // ___________________________ create order _________________________________

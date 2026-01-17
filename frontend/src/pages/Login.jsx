@@ -330,7 +330,7 @@ const Login = () => {
                                                 try {
                                                     // ✅ Use jwtDecode instead of jwt_decode
                                                     const decoded = jwtDecode(credentialResponse.credential);
-                                                    console.log("Google user decoded:", decoded);
+                                                    // console.log("Google user decoded:", decoded);
 
                                                     const res = await api.post(`${serverUrl}/user/google-login`, {
                                                         token: credentialResponse.credential,

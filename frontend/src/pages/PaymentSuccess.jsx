@@ -1,22 +1,67 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import floral from "../assets/floral.png";
+import api from "../utils/axiosInstance";
+import { useContext } from "react";
+import { ProductContext } from "../context/ProductContext";
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const { setCart, sessionId: cartSessionId, fetchCartCount } = useContext(ProductContext);
+  const [loading, setLoading] = useState(true);
+  const stripeSessionId = params.get("session_id");
 
   useEffect(() => {
+    const sessionId = params.get("session_id");
+
+    if (!sessionId) {
+      toast.error("Invalid payment session");
+      navigate("/");
+      return;
+    }
+
     toast.success("Payment successful");
 
-    const timer = setTimeout(() => {
-      navigate("/order-success"); // or track-order route if needed
-    }, 2000);
+    let attempts = 0;
+    const MAX_ATTEMPTS = 5;
 
-    return () => clearTimeout(timer);
-  }, [navigate]);
+    const fetchOrder = async () => {
+      try {
+        const res = await api.get(`/orders/by-session/${stripeSessionId}`);
+        const order = res.data.order;
+
+        // ✅ CLEAR CART USING CART SESSION ID
+        await api.delete("/cart/clearCart", {
+          data: { sessionId: cartSessionId },
+          withCredentials: true,
+        });
+
+        setCart([]);
+        fetchCartCount();
+
+        navigate("/order-success", {
+          state: { order },
+          replace: true,
+        });
+
+      } catch (err) {
+        if (err.response?.status === 404 && attempts < MAX_ATTEMPTS) {
+          attempts += 1;
+          setTimeout(fetchOrder, 1500);
+        } else {
+          toast.error("Unable to load order details");
+          console.error(err);
+        }
+      }
+    };
+
+    fetchOrder();
+  }, [navigate, params]);
+
 
   return (
     <div className="min-h-screen w-full font-Poppins relative bg-white overflow-hidden flex items-center justify-center">
@@ -53,24 +98,22 @@ const PaymentSuccess = () => {
           </div>
         </motion.div>
 
-        {/* Title */}
         <h1 className="text-2xl font-semibold text-gray-800">
           Payment Successful
         </h1>
 
-        {/* Subtitle */}
         <p className="text-gray-500 mt-3 text-sm leading-relaxed">
-          Thank you for your order 💐  
+          Thank you for your order 💐
           <br />
           We’re preparing everything with care.
         </p>
 
-        {/* Divider */}
         <div className="mt-8 h-px bg-gradient-to-r from-transparent via-[#d6b8ff] to-transparent" />
 
-        {/* Processing Text */}
         <p className="mt-6 text-sm text-[#b89bff] font-medium">
-          Redirecting to your order details…
+          {loading
+            ? "Finalizing your order…"
+            : "Redirecting to your order details…"}
         </p>
       </motion.div>
     </div>

@@ -156,7 +156,6 @@ const clearCart = async (req, res) => {
     }
 };
 
-
 const updateQuantity = async (req, res) => {
     try {
         const { productId, sessionId, quantity } = req.body
