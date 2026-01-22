@@ -531,7 +531,7 @@ const AdminOrders = () => {
                                 <p><b>Delivery Date:</b> {selectedOrder.shipping?.deliveryDate ? formatDate(selectedOrder.shipping.deliveryDate) : "-"}</p>
                                 <p><b>Delivery Slot:</b> {selectedOrder.shipping?.deliverySlot || "-"}</p>
 
-                                <p><b>Delivery Charge:</b> AED {Number(selectedOrder.shipping?.deliveryCharge || 0).toFixed(2)}</p>
+                                <p><b>Delivery Charge:</b> AED {Number(selectedOrder.totals?.deliveryCharge || selectedOrder.shipping?.deliveryCharge || 0).toFixed(2)}</p>
                                 <p><b>Order Created:</b> {formatDate(selectedOrder.createdAt)}</p>
                             </div>
                         </div>

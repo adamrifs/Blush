@@ -1,14 +1,24 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const adminSettingsSchema = new mongoose.Schema({
-  adminId: { type: mongoose.Schema.Types.ObjectId, required: true, unique: true, ref: 'Admin' },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    unique: true,
+    ref: "admin", // 👈 must match Admin model name
+  },
+
   pushEnabled: { type: Boolean, default: false },
+  pushTokens: { type: [String], default: [] },
+
   emailEnabled: { type: Boolean, default: true },
   smsEnabled: { type: Boolean, default: false },
   soundEnabled: { type: Boolean, default: true },
   vibrationEnabled: { type: Boolean, default: true },
-  email: { type: String },   // admin email for alerts
-  phone: { type: String },   // phone number if using SMS
+
+  email: String,
+  phone: String,
 }, { timestamps: true });
 
-module.exports = mongoose.model('AdminSettings', adminSettingsSchema);
+
+module.exports = mongoose.model("AdminSettings", adminSettingsSchema);

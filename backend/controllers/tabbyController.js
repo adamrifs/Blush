@@ -1,71 +1,55 @@
 const axios = require("axios");
-const Order = require("../models/orderSchema");
 
 exports.createTabbySession = async (req, res) => {
   try {
-    const { orderPayload } = req.body;
+    const { cart, totals, shipping, user } = req.body;
 
-    // 1️⃣ Create LOCAL order (PENDING)
-    const order = await Order.create({
-      ...orderPayload,
+    const payload = {
       payment: {
-        ...orderPayload.payment,
-        method: "tabby",
-        status: "pending",
-        transactionId: null,
+        amount: totals.grandTotal,
+        currency: "AED",
+        description: "Blush Flowers Order",
+        buyer: {
+          email: user.email,
+          phone: shipping.receiverPhone,
+          name: shipping.receiverName
+        },
+        order: {
+          reference_id: `BLUSH_${Date.now()}`,
+          items: cart.map(item => ({
+            title: item.productId.name,
+            quantity: item.quantity,
+            unit_price: item.basePrice,
+            category: "Flowers"
+          }))
+        },
+        shipping_address: {
+          city: shipping.emirate,
+          address: `${shipping.area}, ${shipping.street}`,
+          zip: "00000"
+        }
       },
-    });
+      lang: "en",
+      merchant_code: process.env.TABBY_MERCHANT_CODE,
+      success_url: `${process.env.FRONTEND_URL}/payment-success`,
+      cancel_url: `${process.env.FRONTEND_URL}/payment-failed`
+    };
 
-    // 2️⃣ Create Tabby Checkout
-    const { data } = await axios.post(
+    const response = await axios.post(
       `${process.env.TABBY_API_BASE}/api/v2/checkout`,
-      {
-        payment: {
-          amount: orderPayload.totals.grandTotal,
-          currency: "AED",
-          description: `Blush Order ${order._id}`,
-          buyer: {
-            email: "customer@blush.ae",
-            phone: orderPayload.shipping.receiverPhone,
-            name: orderPayload.shipping.receiverName,
-          },
-          order: {
-            reference_id: order._id.toString(),
-            items: orderPayload.items.map((item) => ({
-              title: "Blush Product",
-              quantity: item.quantity,
-              unit_price: item.addons?.[0]?.price || 0,
-            })),
-          },
-        },
-        merchant_code: process.env.TABBY_MERCHANT_CODE,
-        lang: "en",
-        merchant_urls: {
-          success: `${process.env.CLIENT_URL}/payment/status?order=${order._id}`,
-          cancel: `${process.env.CLIENT_URL}/payment-failed`,
-          failure: `${process.env.CLIENT_URL}/payment-failed`,
-        },
-      },
+      payload,
       {
         headers: {
           Authorization: `Bearer ${process.env.TABBY_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"
+        }
       }
     );
 
-    const checkoutUrl = data?.configuration?.available_products?.installments?.[0]?.web_url;
+    res.json({ url: response.data.configuration.available_products.installments[0].web_url });
 
-    if (!checkoutUrl) {
-      return res.status(400).json({ error: "Tabby checkout unavailable" });
-    }
-
-    res.json({ redirect_url: checkoutUrl });
   } catch (error) {
-    console.error("Tabby Error:", error.response?.data || error.message);
-    res.status(500).json({
-      error: "Tabby payment error",
-      details: error.response?.data || error.message,
-    });
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ message: "Tabby session failed" });
   }
 };

@@ -1,119 +1,14 @@
 const Order = require("../models/orderSchema");
 const Product = require("../models/productSchema");
 const User = require("../models/userSchema");
-const webPush = require("web-push");
 const AdminSettings = require('../models/AdminSettings');
 const { sendEmail } = require('../config/emailSender');
 const Admin = require("../models/adminSchema");
-// VAPID CONFIG
-
-webPush.setVapidDetails(
-  "mailto:admin@blush.com",
-  process.env.VAPID_PUBLIC,
-  process.env.VAPID_PRIVATE
-);
-
-// Reusable function to send push notifications
-const sendPushNotification = async (subscription, payload) => {
-  try {
-    await webPush.sendNotification(subscription, JSON.stringify(payload));
-  } catch (err) {
-    console.log("Push send error:", err);
-  }
-};
-
-// CREATE ORDER
-// for production
-// exports.createOrder = async (req, res) => {
-//     try {
-//         if (!req.body.cardMessage) {
-//             req.body.cardMessage = {
-//                 option: "no_card",
-//                 messageHTML: "",
-//                 messageText: "",
-//                 template: ""
-//             };
-//         }
-//         //  Create order
-//         const order = new Order(req.body);
-//         await order.save();
-
-//         //  Fetch ALL admin settings (each admin has own toggles)
-//         const admins = await AdminSettings.find();
-
-//         //  Load socket.io instance
-//         const io = req.app.locals.io;
-
-//         //  Notify all admins based on their settings
-//         for (const settings of admins) {
-
-//             // ==========================
-//             // SOCKET.IO REAL-TIME ALERT
-//             // ==========================
-//             if (io) {
-//                 io.to(`admin_${settings.adminId}`).emit("notification", {
-//                     type: "order_created",
-//                     title: "New Order",
-//                     message: `Order #${order._id} has been placed`,
-//                     orderId: order._id,
-//                     time: new Date(),
-//                 });
-//             }
-
-//             // ==========================
-//             // EMAIL ALERT (RESEND)
-//             // ==========================
-//             if (settings.emailEnabled && settings.email) {
-//                 const html = `
-//     <h2>New Order Received</h2>
-//     <p><strong>Order ID:</strong> ${order._id}</p>
-//     <p><strong>Total:</strong> ${order.total || "N/A"}</p>
-
-//     ${order.cardMessage?.option === "want_card" ?
-//           `<hr/>
-//           <h3>Card Message</h3>
-//           <p><strong>Template:</strong> ${order.cardMessage.template}</p>
-//           <div>${order.cardMessage.messageHTML}</div>`
-//            : ""}
-//           <p>A new order has been placed on your store.</p>`;
-
-//                 await sendEmail(
-//                     settings.email,
-//                     `New Order #${order._id}`,
-//                     html
-//                 );
-
-//                 console.log("Resend → Email sent to:", settings.email);
-//             }
-//         }
-
-//         //  Legacy push system (optional)
-//         const admin = await Admin.findOne();
-//         if (admin?.subscription) {
-//             await webPush.sendNotification(
-//                 admin.subscription,
-//                 JSON.stringify({
-//                     title: "New Order Received 💐",
-//                     message: `Order #${order._id} has been placed.`,
-//                 })
-//             );
-//         }
-
-//         //  Final response
-//         res.status(201).json({
-//             success: true,
-//             message: "Order created successfully",
-//             order,
-//         });
-
-//     } catch (error) {
-//         console.log("Create Order Error:", error);
-//         res.status(500).json({ message: error.message });
-//     }
-// };
+const firebaseAdmin = require("../config/firebaseAdmin");
 
 exports.createOrder = async (req, res) => {
   try {
+    // 1️⃣ Ensure cardMessage exists
     if (!req.body.cardMessage) {
       req.body.cardMessage = {
         option: "no_card",
@@ -123,16 +18,24 @@ exports.createOrder = async (req, res) => {
       };
     }
 
-    // 1️⃣ SAVE ORDER (CRITICAL PATH)
+    // 2️⃣ CREATE & SAVE ORDER
     const order = new Order(req.body);
     await order.save();
 
-    // 2️⃣ NON-CRITICAL SIDE EFFECTS
+    // 3️⃣ NOTIFICATIONS (Socket + Email + Push)
     try {
-      const admins = await AdminSettings.find();
-      const io = req.app.locals.io;
+      const adminSettingsList = await AdminSettings.find({
+        pushTokens: { $exists: true, $ne: [] }
+      });
 
-      for (const settings of admins) {
+
+
+      const io = req.app.locals.io;
+      let allPushTokens = [];
+
+      for (const settings of adminSettingsList) {
+
+        // 🔔 SOCKET NOTIFICATION (Admin panel OPEN)
         if (io) {
           io.to(`admin_${settings.adminId}`).emit("notification", {
             type: "order_created",
@@ -143,32 +46,39 @@ exports.createOrder = async (req, res) => {
           });
         }
 
+        // 📧 EMAIL NOTIFICATION
         if (settings.emailEnabled && settings.email) {
           await sendEmail(
             settings.email,
             `New Order #${order._id}`,
-            `<p>Order ${order._id} created</p>`
+            `<p><strong>New Order Received</strong></p>
+             <p>Order ID: ${order._id}</p>`
           );
         }
-      }
-    } catch (notifyErr) {
-      console.log("Notifications skipped:", notifyErr.message);
-    }
 
-    // 3️⃣ LEGACY PUSH (OPTIONAL)
-    try {
-      const admin = await Admin.findOne();
-      if (admin?.subscription) {
-        await webPush.sendNotification(
-          admin.subscription,
-          JSON.stringify({
-            title: "New Order",
-            message: `Order #${order._id}`,
-          })
-        );
+        // 📲 COLLECT PUSH TOKENS
+        if (settings.pushTokens && settings.pushTokens.length > 0) {
+          allPushTokens.push(...settings.pushTokens);
+        }
       }
-    } catch (pushErr) {
-      console.log("Web push skipped:", pushErr.message);
+
+      // 🚀 PUSH NOTIFICATION (Admin panel CLOSED)
+      if (allPushTokens.length > 0) {
+        const response = await firebaseAdmin.messaging().sendMulticast({
+          tokens: allPushTokens,
+          data: {
+            title: "🛒 New Order Received",
+            body: `Order #${order._id} has been placed`,
+            type: "order_created",
+            orderId: order._id.toString(),
+          },
+        });
+
+        console.log("🔥 FCM response:", response);
+      }
+
+    } catch (notifyErr) {
+      console.log("Notification error (ignored):", notifyErr.message);
     }
 
     // 4️⃣ SUCCESS RESPONSE
@@ -183,7 +93,6 @@ exports.createOrder = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // GET ALL ORDERS (ADMIN)
 
@@ -304,24 +213,23 @@ exports.deleteOrder = async (req, res) => {
 };
 
 // GET ORDER BY STRIPE SESSION ID
-// GET ORDER BY STRIPE SESSION ID
 exports.getOrderBySessionId = async (req, res) => {
   try {
     const { sessionId } = req.params;
 
     const order = await Order.findOne({
       "payment.orderId": sessionId,
-    })
-      .populate("items.productId", "name price image description category")
-      .populate("userId", "name email phone");
+    }).populate("items.productId");
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    res.status(200).json({ success: true, order });
+    res.status(200).json({ order });
   } catch (error) {
-    console.log("Get Order By Session Error:", error);
+    console.error("Get order by session error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+

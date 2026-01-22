@@ -7,8 +7,8 @@ const Admin = require("../models/adminSchema");
 // ===============================
 webPush.setVapidDetails(
   "mailto:admin@blush.com",
-  process.env.VAPID_PUBLIC,
-  process.env.VAPID_PRIVATE
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
 );
 
 // ===============================

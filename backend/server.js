@@ -7,7 +7,6 @@ const userRoutes = require('./routes/userRoutes.js')
 const cartRoutes = require('./routes/cartRoutes.js')
 const addressRoutes = require('./routes/addressRoutes.js')
 const paymentRoutes = require('./routes/paymentRoutes.js')
-const webhookRoutes = require('./routes/webhookRoutes.js')
 const stripeWebhookRoutes = require("./routes/stripeWebhookRoutes")
 const orderRoutes = require('./routes/orderRoutes.js');
 const pushRoutes = require('./routes/pushRoutes.js')
@@ -26,6 +25,12 @@ const { Server } = require('socket.io');
 
 const app = express()
 app.set("trust proxy", 1);
+app.use(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  require("./routes/stripeWebhookRoutes")
+);
+
 app.use(cors({
     origin: [
         'http://localhost:3000',
@@ -36,7 +41,6 @@ app.use(cors({
     ],
     credentials: true
 }))
-app.use("/api/payment", stripeWebhookRoutes)
 app.use(express.json())
 app.use(cookieParser())
 app.use('/uploads', express.static('uploads'));
@@ -52,7 +56,6 @@ app.use('/api/user', userRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/address', addressRoutes)
 app.use("/api/payment", paymentRoutes)
-app.use("/webhooks", webhookRoutes);
 app.use('/api/orders', orderRoutes);
 app.use("/api/push", pushRoutes);
 app.use('/api/customers', customerRoutes);

@@ -118,7 +118,7 @@ const Login = () => {
             );
             // console.log(response.data);
 
-            Cookies.set('authToken', response.data.token, { expires: 7, secure: true, sameSite: 'strict' });
+            Cookies.set('authToken', response.data.token, { expires: 7, secure: true, sameSite: 'lax' });
             const userToken = response.data.token
             setToken(userToken)
 
@@ -339,7 +339,7 @@ const Login = () => {
                                                     Cookies.set("authToken", res.data.token, {
                                                         expires: 7,
                                                         secure: true,
-                                                        sameSite: "strict",
+                                                        sameSite: "lax",
                                                     });
                                                     localStorage.setItem('user', JSON.stringify(res.data.user));
                                                     setToken(res.data.token);
@@ -525,7 +525,7 @@ const Login = () => {
                                                     Cookies.set("authToken", res.data.token, {
                                                         expires: 7,
                                                         secure: true,
-                                                        sameSite: "strict",
+                                                        sameSite: "lax",
                                                     });
                                                     localStorage.setItem('user', JSON.stringify(res.data.user));
                                                     setToken(res.data.token);

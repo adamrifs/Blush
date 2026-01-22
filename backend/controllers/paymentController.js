@@ -82,6 +82,13 @@ exports.createStripeSession = async (req, res) => {
         shipping: JSON.stringify(shipping),
         totals: JSON.stringify(totals),
         cardMessage: JSON.stringify(cardMessage),
+        cart: JSON.stringify(
+          cart.map(item => ({
+            productId: item.productId._id,
+            quantity: item.quantity,
+            addons: item.addons || []
+          }))
+        )
       },
     });
 

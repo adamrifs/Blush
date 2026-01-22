@@ -105,41 +105,79 @@ const PaymentStep = ({
             return;
         }
 
+        const user = JSON.parse(localStorage.getItem("user"));
+
+        if (!user) {
+            showToast("Please login to continue", "warning");
+            return;
+        }
+
         try {
-            const user = JSON.parse(localStorage.getItem("user"));
+            // ===================== TABBY =====================
+            if (method === "tabby") {
+                showToast("Comming Soon...","info")
+                // const res = await api.post(`${serverUrl}/payment/tabby`, {
+                //     cart,
+                //     totals: {
+                //         grandTotal: Number(grandTotalDisplay),
+                //     },
+                //     shipping: {
+                //         receiverName,
+                //         receiverPhone,
+                //         emirate: deliveryEmirate,
+                //         area,
+                //         street,
+                //     },
+                //     user: {
+                //         email: user.email,
+                //         phone: user.phone,
+                //         name: user.name || receiverName,
+                //     },
+                // });
 
-            const res = await api.post(
-                `${serverUrl}/payment/create-stripe-session`,
-                {
-                    cart,
-                    totals: {
-                        bagTotal: Number(bagTotalInclusiveDisplay),
-                        deliveryCharge: Number(deliveryExclusiveDisplay),
-                        vatAmount: Number(vatDisplay),
-                        grandTotal: Number(grandTotalDisplay)
-                    },
-                    shipping: {
-                        receiverName,
-                        receiverPhone,
-                        emirate: deliveryEmirate,
-                        area,
-                        street,
-                        building,
-                        flat,
-                        deliveryDate,
-                        deliverySlot: deliverySlot?.title
-                    },
-                    cardMessage: cardMessageData,
-                    userId: user._id
-                },
-                { withCredentials: true }
-            );
+                // window.location.href = res.data.url;
+                // return;
+            }
 
-            window.location.href = res.data.url;
-        } catch (err) {
-            showToast("Stripe payment failed", "error");
+            // ===================== STRIPE (CARD / APPLE PAY) =====================
+            if (method === "card" || method === "applepay") {
+                const res = await api.post(
+                    `${serverUrl}/payment/create-stripe-session`,
+                    {
+                        cart,
+                        totals: {
+                            bagTotal: Number(bagTotalInclusiveDisplay),
+                            deliveryCharge: Number(deliveryExclusiveDisplay),
+                            vatAmount: Number(vatDisplay),
+                            grandTotal: Number(grandTotalDisplay),
+                        },
+                        shipping: {
+                            receiverName,
+                            receiverPhone,
+                            emirate: deliveryEmirate,
+                            area,
+                            street,
+                            building,
+                            flat,
+                            deliveryDate,
+                            deliverySlot: deliverySlot?.title,
+                        },
+                        cardMessage: cardMessageData,
+                        userId: user._id,
+                    },
+                    { withCredentials: true }
+                );
+
+                window.location.href = res.data.url;
+                return;
+            }
+
+        } catch (error) {
+            console.error(error);
+            showToast("Payment initiation failed. Please try again.", "error");
         }
     };
+
 
 
     // ___________________________ create order _________________________________
@@ -356,7 +394,7 @@ const PaymentStep = ({
                     </div>
 
                     {/* ------- Pay with Apple Pay ------- */}
-                    <div
+                    {/* <div
                         className="flex items-center justify-between py-5 border-b border-gray-200"
                         onClick={() => setMethod("applepay")}
                     >
@@ -370,11 +408,11 @@ const PaymentStep = ({
                         </div>
 
                         <img src={applePay} className="w-30 h-20 object-contain" />
-                    </div>
+                    </div> */}
 
 
                     {/* ------- Pay with Tamara ------- */}
-                    <div
+                    {/* <div
                         className="flex items-center justify-between py-5 border-b border-gray-200"
                         onClick={() => setMethod("tamara")}
                     >
@@ -393,7 +431,7 @@ const PaymentStep = ({
                                 className="h-full w-full object-contain opacity-80"
                             />
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* ------- Pay with Tabby ------- */}
                     <div

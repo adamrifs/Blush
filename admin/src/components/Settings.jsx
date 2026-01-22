@@ -30,6 +30,38 @@ const Settings = ({ setIsAuth }) => {
     fetchSettings();
   }, []);
 
+  const handlePushToggle = async () => {
+    const newVal = !settings.pushEnabled;
+
+    setSettings(prev => ({
+      ...prev,
+      pushEnabled: newVal
+    }));
+
+    try {
+      if (newVal) {
+        // 🔥 This already saves pushEnabled + token
+        await registerAdminPush();
+      } else {
+        // Only disable
+        await saveSettings({ pushEnabled: false });
+      }
+
+      toast.success(
+        newVal
+          ? "Push notifications enabled"
+          : "Push notifications disabled"
+      );
+    } catch (err) {
+      setSettings(prev => ({
+        ...prev,
+        pushEnabled: !newVal
+      }));
+      toast.error("Failed to update push settings");
+    }
+  };
+
+
   const fetchSettings = async () => {
     try {
       setLoading(true);
@@ -89,25 +121,7 @@ const Settings = ({ setIsAuth }) => {
     }
   };
 
-  // ---------------------------------------------------------
-  // PUSH NOTIFICATION TOGGLE
-  // ---------------------------------------------------------
-  const handlePushToggle = async () => {
-    if (!settings.pushEnabled) {
-      // enable push
-      const resp = await registerAdminPush(VAPID_PUBLIC_KEY);
-      if (!resp.success) {
-        toast.error("Push notification permission denied");
-        return;
-      }
 
-      await saveSettings({ pushEnabled: true });
-      toast.success("Push notifications enabled");
-    } else {
-      await saveSettings({ pushEnabled: false });
-      toast.info("Push notifications disabled");
-    }
-  };
 
   // ---------------------------------------------------------
   // EMAIL TOGGLE
