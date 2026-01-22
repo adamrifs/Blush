@@ -1,5 +1,6 @@
 # Dependencies
 node_modules
+backend/node_modules
 
 # Environment files
 .env
@@ -10,10 +11,3 @@ admin/.env
 # Firebase / Google secrets
 backend/firebase-service-account.json
 backend/firebase-service-account.json.json
-
-# Build outputs
-dist
-build
-
-# Logs
-npm-debug.log*
