@@ -26,21 +26,32 @@ const { Server } = require('socket.io');
 const app = express()
 app.set("trust proxy", 1);
 app.use(
-  "/api/stripe/webhook",
-  express.raw({ type: "application/json" }),
-  require("./routes/stripeWebhookRoutes")
+    "/api/stripe/webhook",
+    express.raw({ type: "application/json" }),
+    require("./routes/stripeWebhookRoutes")
 );
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://blushflowers.ae',
+    'https://www.blushflowers.ae',
+    'https://admin.blushflowers.ae'
+];
 
 app.use(cors({
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'https://www.blushflowers.ae',
-        'https://blushflowers.ae'
-    ],
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
-}))
+}));
+
 app.use(express.json())
 app.use(cookieParser())
 app.use('/uploads', express.static('uploads'));
