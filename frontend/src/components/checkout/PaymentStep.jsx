@@ -36,7 +36,7 @@ const PaymentStep = ({
             </div>
         );
     }
-
+    console.log('cart', cart)
     const deliveryCharge = deliverySlot?.price || 0;
 
 
@@ -115,7 +115,7 @@ const PaymentStep = ({
         try {
             // ===================== TABBY =====================
             if (method === "tabby") {
-                showToast("Comming Soon...","info")
+                showToast("Comming Soon...", "info")
                 // const res = await api.post(`${serverUrl}/payment/tabby`, {
                 //     cart,
                 //     totals: {

@@ -8,7 +8,7 @@ const firebaseAdmin = require("../config/firebaseAdmin");
 
 exports.createOrder = async (req, res) => {
   try {
-    // 1️⃣ Ensure cardMessage exists
+    
     if (!req.body.cardMessage) {
       req.body.cardMessage = {
         option: "no_card",
