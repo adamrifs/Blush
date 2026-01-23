@@ -288,7 +288,7 @@ const Settings = ({ setIsAuth }) => {
 
       {/* CONFIRM LOGOUT MODAL */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center">
+        <div className="fixed inset-0 z-9999 bg-black/40 flex items-center justify-center">
           <div className="bg-white w-[90%] max-w-md rounded-2xl p-6 shadow-xl animate-fadeIn">
 
             <h2 className="text-xl font-semibold text-gray-900 mb-3">
