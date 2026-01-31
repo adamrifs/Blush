@@ -68,9 +68,10 @@ const ShippingStep = ({
     const [deliveryCharges, setDeliveryCharges] = useState([]);
 
     useEffect(() => {
-        api.get(`${serverUrl}/settings`).then(res => {
-            setDeliveryCharges(res.data.settings.deliveryCharges || []);
-        });
+        api.get(`${serverUrl}/settings/public`)
+            .then(res => {
+                setDeliveryCharges(res.data.deliveryCharges || []);
+            });
     }, []);
 
     // console.log("delivery charges",deliveryCharges)
@@ -112,19 +113,35 @@ const ShippingStep = ({
         return found ? found.price : 0;
     };
 
+    const handleSelectSlot = (slot, time) => {
+        const price = getDeliveryPrice(selectedEmirate, slot.title);
+
+        console.log("SELECTED SLOT:", {
+            emirate: selectedEmirate,
+            title: slot.title,
+            price: getDeliveryPrice(selectedEmirate, slot.title)
+        });
+
+        setSelectedSlot({
+            ...slot,
+            selectedTime: time,
+            price
+        });
+    };
+
     const deliverySlots = {
         abuDhabi: [
             {
                 title: "Standard",
                 desc: "7 hour slot",
-                price: getDeliveryPrice(selectedEmirate, "Standard"),
+                // price: getDeliveryPrice(selectedEmirate, "Standard"),
                 type: "multiple",
                 options: ["09:00 AM – 04:00 PM", "04:00 PM – 11:00 PM"]
             },
             {
                 title: "Priority",
                 desc: "3 hour slot",
-                price: getDeliveryPrice(selectedEmirate, "Priority"),
+                // price: getDeliveryPrice(selectedEmirate, "Priority"),
                 type: "multiple",
                 options: [
                     "10:00 AM – 01:00 PM",
@@ -136,7 +153,7 @@ const ShippingStep = ({
             {
                 title: "Bullet",
                 desc: "60 Minutes Slot",
-                price: getDeliveryPrice(selectedEmirate, "Bullet"),
+                // price: getDeliveryPrice(selectedEmirate, "Bullet"),
                 type: "multiple",
                 options: [
                     "10:00 AM – 11:00 AM",
@@ -159,20 +176,20 @@ const ShippingStep = ({
             {
                 title: "Standard",
                 desc: "4 hour slot",
-                price: getDeliveryPrice(selectedEmirate, "Standard"),
+                // price: getDeliveryPrice(selectedEmirate, "Standard"),
                 type: "multiple",
                 options: ["02:00 PM – 06:00 PM", "06:00 PM – 10:00 PM"]
             },
             {
                 title: "Priority",
                 desc: "Not available in your emirate",
-                price: getDeliveryPrice(selectedEmirate, "Priority"),
+                // price: getDeliveryPrice(selectedEmirate, "Priority"),
                 type: "disabled"
             },
             {
                 title: "Bullet",
                 desc: "Not available in your emirate",
-                price: getDeliveryPrice(selectedEmirate, "Bullet"),
+                // price: getDeliveryPrice(selectedEmirate, "Bullet"),
                 type: "disabled"
             }
         ]
@@ -565,8 +582,11 @@ const ShippingStep = ({
                                                         expandedSlot === slot.title ? null : slot.title
                                                     );
                                                 } else {
-                                                    setSelectedSlot(slot);
-                                                    setDeliverySlot(slot);
+                                                    handleSelectSlot(slot);
+                                                    setDeliverySlot({
+                                                        ...slot,
+                                                        price: getDeliveryPrice(selectedEmirate, slot.title)
+                                                    });
                                                     setShowSlotDropdown(false);
                                                 }
                                             }}
@@ -580,7 +600,7 @@ const ShippingStep = ({
 
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[#b89bff] font-semibold">
-                                                    + AED {slot.price}
+                                                    + AED {getDeliveryPrice(selectedEmirate, slot.title)}
                                                 </span>
                                                 <ChevronRight strokeWidth={1} />
                                             </div>
@@ -592,9 +612,7 @@ const ShippingStep = ({
                                                     <div
                                                         key={idx}
                                                         onClick={() => {
-                                                            const chosenSlot = { ...slot, selectedTime: time };
-                                                            setSelectedSlot(chosenSlot);
-                                                            setDeliverySlot(chosenSlot);
+                                                            handleSelectSlot(slot, time);
                                                             setShowSlotDropdown(false);
                                                         }}
                                                         className="bg-[#f4f5f7] rounded-full py-3 px-5 cursor-pointer hover:bg-[#ececec]"

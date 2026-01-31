@@ -106,3 +106,20 @@ exports.testEmail = async (req, res) => {
     });
   }
 };
+
+exports.getPublicDeliveryCharges = async (req, res) => {
+  try {
+    const settings = await AdminSettings.findOne({});
+
+    return res.status(200).json({
+      success: true,
+      deliveryCharges: settings?.deliveryCharges || [],
+    });
+  } catch (error) {
+    console.error("❌ Error fetching public delivery charges:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch delivery charges",
+    });
+  }
+};
