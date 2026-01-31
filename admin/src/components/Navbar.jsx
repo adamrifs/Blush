@@ -7,42 +7,109 @@ import { RiMenu2Line } from "react-icons/ri";
 import { io } from "socket.io-client";
 import { serverUrl } from "../../urls";
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+
+const testSocket = io(import.meta.env.VITE_SERVER_URL, {
+  withCredentials: true,
+});
+
+testSocket.on("connect", () => {
+  console.log("🧪 TEST SOCKET CONNECTED:", testSocket.id);
+});
+
 const Navbar = ({ setIsSideBarOpen }) => {
   const [notifications, setNotifications] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [adminData, setAdminData] = useState(null);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(
+        `${serverUrl}/notifications`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch notifications");
+      }
+
+      const data = await res.json();
+      setNotifications(data);
+    } catch (err) {
+      console.error("Failed to fetch notifications", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // ✅ UNREAD COUNT (NEW)
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const socketRef = useRef(null);
 
   useEffect(() => {
-    const SOCKET_URL = serverUrl.replace("/api", "");
+    fetch(`${import.meta.env.VITE_SERVER_URL}/admin/me`, {
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data?.admin?._id) {
+          setAdminData(data.admin);
+          console.log("✅ Admin loaded:", data.admin._id);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
 
-    socketRef.current = io(SOCKET_URL, {
-      transports: ["polling", "websocket"],
+  // 2️⃣ Connect socket AFTER admin exists
+  useEffect(() => {
+    if (!adminData?._id) return;
+
+    socketRef.current = io(import.meta.env.VITE_SERVER_URL, {
       withCredentials: true,
-      path: "/socket.io",
+      auth: {
+        adminId: adminData._id,
+      },
     });
 
     socketRef.current.on("connect", () => {
-      socketRef.current.emit("join-admin-navbar");
+      console.log("🔌 Socket connected:", socketRef.current.id);
     });
 
     socketRef.current.on("notification", (payload) => {
-      setNotifications((prev) => [
-        {
-          id: Date.now(),
-          title: payload.title,
-          message: payload.message,
-          time: new Date().toLocaleTimeString(),
-        },
-        ...prev,
-      ]);
+      console.log("🔔 Notification received:", payload);
+      setNotifications(prev => [payload, ...prev]);
     });
 
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      socketRef.current.disconnect();
     };
-  }, []);
+  }, [adminData?._id]);
+
+
+  const timeAgo = (date) => {
+    const seconds = Math.floor((Date.now() - new Date(date)) / 1000);
+
+    const intervals = [
+      { label: "year", seconds: 31536000 },
+      { label: "month", seconds: 2592000 },
+      { label: "day", seconds: 86400 },
+      { label: "hour", seconds: 3600 },
+      { label: "min", seconds: 60 },
+    ];
+
+    for (const interval of intervals) {
+      const count = Math.floor(seconds / interval.seconds);
+      if (count >= 1) {
+        return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
+      }
+    }
+
+    return "just now";
+  };
 
   return (
     <>
@@ -100,13 +167,24 @@ const Navbar = ({ setIsSideBarOpen }) => {
           {/* NOTIFICATIONS */}
           <div
             className="relative"
-            onClick={() => setShowDropdown(!showDropdown)}
+            onClick={async () => {
+              setShowDropdown(!showDropdown);
+
+              await fetch(`${serverUrl}/notifications/read-all`, {
+                method: "PATCH",
+                credentials: "include"
+              });
+
+              setNotifications(prev =>
+                prev.map(n => ({ ...n, isRead: true }))
+              );
+            }}
           >
             <IoNotificationsOutline />
 
-            {notifications.length > 0 && (
+            {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-600 text-white w-5 h-5 text-xs flex items-center justify-center rounded-full">
-                {notifications.length}
+                {unreadCount}
               </span>
             )}
           </div>
@@ -126,15 +204,15 @@ const Navbar = ({ setIsSideBarOpen }) => {
             <div className="max-h-64 overflow-y-auto">
               {notifications.map((n) => (
                 <div
-                  key={n.id}
+                  key={n._id}
                   className="border-b py-2 px-1 hover:bg-gray-100 rounded cursor-pointer"
                 >
                   <p className="font-semibold">{n.title}</p>
                   <p className="text-sm text-gray-600">
                     {n.message}
                   </p>
-                  <p className="text-xs text-gray-400">
-                    {n.time}
+                  <p className="text-xs text-blue-400">
+                    {timeAgo(n.createdAt)}
                   </p>
                 </div>
               ))}
@@ -146,7 +224,6 @@ const Navbar = ({ setIsSideBarOpen }) => {
       {/* MOBILE SEARCH OVERLAY */}
       {showMobileSearch && (
         <div className="md:hidden fixed inset-0 z-50 bg-white px-4 py-3 flex items-center gap-3">
-          {/* CLOSE */}
           <button
             onClick={() => setShowMobileSearch(false)}
             className="text-xl font-semibold"
@@ -154,7 +231,6 @@ const Navbar = ({ setIsSideBarOpen }) => {
             ✕
           </button>
 
-          {/* SEARCH INPUT */}
           <div
             className="
               flex items-center gap-2

@@ -307,6 +307,13 @@ const Login = () => {
                                             <p className="text-red-500 text-sm mt-1">{passwordError}</p>
                                         )}
                                     </div>
+                                    <div>
+                                        <p
+                                            className="text-sm text-right text-[#0f708a] cursor-pointer hover:underline"
+                                            onClick={() => navigate("/forgot-password")}>
+                                            Forgot password?
+                                        </p>
+                                    </div>
 
                                     <button
                                         type="submit"
@@ -520,7 +527,7 @@ const Login = () => {
 
                                                     const res = await api.post(`${serverUrl}/user/google-login`, {
                                                         token: credentialResponse.credential,
-                                                    }, { withCredentials: true ,showLoader: true, });
+                                                    }, { withCredentials: true, showLoader: true, });
 
                                                     Cookies.set("authToken", res.data.token, {
                                                         expires: 7,

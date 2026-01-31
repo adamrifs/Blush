@@ -314,7 +314,36 @@ const Navbar = () => {
       </div>
 
       {/* Mobile menu toggle */}
-      <TbMenuDeep className="md:hidden block text-3xl sm:text-4xl cursor-pointer" onClick={() => setSideBarOpen(!sidebarOpen)} />
+      <div className="md:hidden flex items-center gap-4">
+        {/* 🛒 Mobile Basket (OUTSIDE hamburger) */}
+        <div
+          className="relative cursor-pointer"
+          onClick={() => {
+            nav("/cart-page");
+            window.scrollTo(0, 0);
+          }}
+        >
+          <ShoppingBasket
+            strokeWidth={1}
+            color="#404040"
+            className="w-7 h-7"
+          />
+
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-gradient-to-r from-[#b89bff] to-[#d6b8ff]
+        text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+              {cartCount}
+            </span>
+          )}
+        </div>
+
+        {/* ☰ Hamburger */}
+        <TbMenuDeep
+          className="text-3xl sm:text-4xl cursor-pointer"
+          onClick={() => setSideBarOpen(!sidebarOpen)}
+        />
+      </div>
+
       {
         sidebarOpen && (
           <div className='fixed inset-0 z-10' onClick={() => {

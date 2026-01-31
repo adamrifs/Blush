@@ -10,7 +10,8 @@ const {
     getAllOrders,
     updateOrderStatus,
     getOrdersByCustomer,
-    getOrderBySessionId
+    getOrderBySessionId,
+    markAllOrdersRead
 } = require("../controllers/orderController");
 
 // USER ROUTES
@@ -22,6 +23,7 @@ router.get("/byCustomer/:id", getOrdersByCustomer);
 // ADMIN ROUTES (protected)
 router.get("/admin/all", protectRoute, getAllOrders);
 router.put("/admin/:id/status", protectRoute, updateOrderStatus);
+router.patch("/admin/mark-read", protectRoute, markAllOrdersRead);
 
 // GET ORDER USING STRIPE SESSION ID
 router.get("/by-session/:sessionId", getOrderBySessionId);

@@ -5,7 +5,7 @@ const adminSettingsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     required: true,
     unique: true,
-    ref: "admin", // 👈 must match Admin model name
+    ref: "admin", // must match Admin model name
   },
 
   pushEnabled: { type: Boolean, default: false },
@@ -18,6 +18,14 @@ const adminSettingsSchema = new mongoose.Schema({
 
   email: String,
   phone: String,
+  
+  deliveryCharges: [
+    {
+      emirate: { type: String, required: true },
+      slot: { type: String, required: true },
+      price: { type: Number, required: true }
+    }
+  ],
 }, { timestamps: true });
 
 

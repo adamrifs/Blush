@@ -28,6 +28,8 @@ import PaymentSuccess from "./pages/PaymentSuccess"
 import PaymentFailed from "./pages/PaymentFailed"
 import StoreLocation from "./pages/StoreLocation"
 import PaymentStatus from "./pages/PaymentStatus"
+import ForgotPassword from "./pages/ForgotPassword"
+import ResetPassword from "./pages/ResetPassword"
 
 
 function App() {
@@ -51,6 +53,8 @@ function App() {
           <Route path="/cart-page" element={<CartPage />} />
           <Route path="/ai-page" element={<AiPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword/>}/>
+          <Route path="/reset-password/:token" element={<ResetPassword/>}/>
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/user-profile" element={<UserProfile />} />
           <Route path="/order-success" element={<OrderSuccess />} />

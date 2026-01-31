@@ -16,6 +16,9 @@ const userSchema = new mongoose.Schema({
     },
     googleId: { type: String },
     subscription: { type: Object, default: null },
+    
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
 }, { timestamps: true })
 
 const User = mongoose.model('user', userSchema)

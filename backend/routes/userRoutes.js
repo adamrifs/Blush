@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerUser, loginUser, logoutUser, getUser } = require('../controllers/userController.js');
+const { registerUser, loginUser, logoutUser, getUser, forgotPassword, resetPassword } = require('../controllers/userController.js');
 const protectRoute = require('../middleware/authMiddleware.js')
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
@@ -79,5 +79,8 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/logout', logoutUser);
 router.get('/getUser', protectRoute, getUser)
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 
 module.exports = router;

@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const protectRoute = require("../middleware/adminMiddleware");
-const { getSettings, updateSettings, savePushToken,} = require("../controllers/settingsController");
+const { getSettings, updateSettings, savePushToken, testEmail,} = require("../controllers/settingsController");
 
 router.get("/", protectRoute, getSettings);
 router.put("/", protectRoute, updateSettings);
+router.post("/test-email", protectRoute, testEmail);
 
 router.post("/push-token", protectRoute, savePushToken);
 module.exports = router;

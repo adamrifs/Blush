@@ -12,7 +12,7 @@ exports.createTabbySession = async (req, res) => {
         buyer: {
           email: user.email,
           phone: shipping.receiverPhone,
-          name: shipping.receiverName
+          name: shipping.receiverName,
         },
         order: {
           reference_id: `BLUSH_${Date.now()}`,
@@ -20,36 +20,38 @@ exports.createTabbySession = async (req, res) => {
             title: item.productId.name,
             quantity: item.quantity,
             unit_price: item.basePrice,
-            category: "Flowers"
-          }))
+            category: "Flowers",
+          })),
         },
-        shipping_address: {
-          city: shipping.emirate,
-          address: `${shipping.area}, ${shipping.street}`,
-          zip: "00000"
-        }
       },
+
+      merchant_urls: {
+        success: `${process.env.FRONTEND_URL}/payment-success`,
+        cancel: `${process.env.FRONTEND_URL}/payment-failed`,
+        failure: `${process.env.FRONTEND_URL}/payment-failed`,
+      },
+
       lang: "en",
       merchant_code: process.env.TABBY_MERCHANT_CODE,
-      success_url: `${process.env.FRONTEND_URL}/payment-success`,
-      cancel_url: `${process.env.FRONTEND_URL}/payment-failed`
     };
 
     const response = await axios.post(
-      `${process.env.TABBY_API_BASE}/api/v2/checkout`,
+      "https://api.tabby.ai/api/v2/checkout",
       payload,
       {
         headers: {
           Authorization: `Bearer ${process.env.TABBY_SECRET_KEY}`,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
-    res.json({ url: response.data.configuration.available_products.installments[0].web_url });
+    res.json({
+      url: response.data.configuration.available_products.installments[0].web_url,
+    });
 
   } catch (error) {
-    console.error(error.response?.data || error.message);
+    console.error("Tabby session error:", error.response?.data || error.message);
     res.status(500).json({ message: "Tabby session failed" });
   }
 };

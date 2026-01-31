@@ -66,6 +66,10 @@ const orderSchema = new mongoose.Schema({
         messageHTML: String,
         messageText: String,
         template: String
+    },
+    isReadByAdmin: {
+        type: Boolean,
+        default: false
     }
 
 }, { timestamps: true });

@@ -24,7 +24,7 @@ const Toast = ({ message, type = "info", onClose }) => {
     };
 
     return (
-        <div className="fixed top-6 left-0 right-0 flex justify-center pointer-events-none">
+        <div className="fixed top-6 left-1/2  flex justify-center pointer-events-none">
             <div
                 className={`
                     bg-gradient-to-r ${theme[type]}

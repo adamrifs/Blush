@@ -1,4 +1,5 @@
 const AdminSettings = require('../models/AdminSettings');
+const { sendEmail } = require("../config/emailSender");
 
 exports.getSettings = async (req, res) => {
   try {
@@ -65,5 +66,43 @@ exports.savePushToken = async (req, res) => {
   } catch (err) {
     console.error("Save push token error:", err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// TEST EMAIL CONTROLLER
+// ===============================
+exports.testEmail = async (req, res) => {
+  try {
+    const adminId = req.admin._id;
+
+    const adminSettings = await AdminSettings.findOne({ adminId });
+
+    if (!adminSettings || !adminSettings.email) {
+      return res.status(400).json({
+        success: false,
+        message: "No email configured",
+      });
+    }
+
+    await sendEmail(
+      adminSettings.email,
+      "✅ Test Email from Blush",
+      `
+        <h3>Email Alerts Test</h3>
+        <p>This is a test email.</p>
+        <p>Your email alerts are working successfully 🎉</p>
+      `
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Test email sent successfully",
+    });
+  } catch (error) {
+    console.error("Test Email Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send test email",
+    });
   }
 };

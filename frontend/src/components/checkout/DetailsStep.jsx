@@ -24,13 +24,15 @@ const DetailsStep = ({
     showEmoji, setShowEmoji,
     charCount, MAX_CHAR,
     templateClasses, cardTemplate, setCardTemplate,
-    previewHTML, clearCardData,
+    previewHTML, setPreviewHTML, clearCardData,
 
     // Continue action
     validateDetails,
     setCurrentStep,
     setCardMessageData,
 }) => {
+
+    const CARD_STORAGE_KEY = "blush_card_message";
 
     const [cardOptionError, setCardOptionError] = React.useState("");
     const validateCardOption = () => {
@@ -60,6 +62,29 @@ const DetailsStep = ({
             template: cardTemplate
         };
     };
+
+    React.useEffect(() => {
+        const saved = localStorage.getItem(CARD_STORAGE_KEY);
+        if (!saved) return;
+
+        const data = JSON.parse(saved);
+
+        if (data.cardOption === "want_card") {
+            setCardOption("want_card");
+            setCardTemplate(data.cardTemplate || "icedSilver");
+
+            // restore editor content
+            setTimeout(() => {
+                if (editorRef.current) {
+                    editorRef.current.innerHTML = data.messageHTML || "";
+                }
+            }, 0);
+
+            // ✅ THIS WAS MISSING
+            setPreviewHTML(data.messageHTML || "");
+        }
+    }, []);
+
 
     return (
         <div className="w-full font-Poppins">
@@ -240,14 +265,29 @@ const DetailsStep = ({
                             <div
                                 ref={editorRef}
                                 contentEditable
-                                onInput={updateCount}
+                                onInput={() => {
+                                    updateCount();
+                                    const html = editorRef.current.innerHTML;
+                                    const data = {
+                                        cardOption: "want_card",
+                                        messageHTML: editorRef.current.innerHTML,
+                                        messageText: editorRef.current.innerText,
+                                        cardTemplate,
+                                    };
+
+                                    localStorage.setItem(
+                                        CARD_STORAGE_KEY,
+                                        JSON.stringify(data)
+                                    );
+                                    setPreviewHTML(html);
+                                }}
                                 onFocus={() => setShowEmoji(false)}
                                 className="
-        rounded-[25px] border border-[#c5e3bf]
-        font-Poppins text-sm sm:text-[16px] bg-white outline-none 
-        leading-relaxed text-gray-700 overflow-y-auto
-        focus:ring-2 focus:ring-[#bca8ff] transition-shadow
-    "
+    rounded-[25px] border border-[#c5e3bf]
+    font-Poppins text-sm sm:text-[16px] bg-white outline-none 
+    leading-relaxed text-gray-700 overflow-y-auto
+    focus:ring-2 focus:ring-[#bca8ff] transition-shadow
+  "
                                 style={{
                                     width: "340px",
                                     height: "490px",
@@ -352,7 +392,11 @@ const DetailsStep = ({
                             type="radio"
                             name="cardOption"
                             value="empty_card"
-                            onChange={() => { setCardOption("empty_card"); clearCardData(); }}
+                            onChange={() => {
+                                setCardOption("empty_card");
+                                clearCardData();
+                                localStorage.removeItem(CARD_STORAGE_KEY);
+                            }}
                             className="peer appearance-none w-5 h-5 rounded-full bg-[#f4f5f7] border border-gray-300"
                         />
                         <span className="
@@ -370,7 +414,11 @@ const DetailsStep = ({
                             type="radio"
                             name="cardOption"
                             value="no_card"
-                            onChange={() => { setCardOption("no_card"); clearCardData(); }}
+                            onChange={() => {
+                                setCardOption("no_card");
+                                clearCardData();
+                                localStorage.removeItem(CARD_STORAGE_KEY);
+                            }}
                             className="peer appearance-none w-5 h-5 rounded-full bg-[#f4f5f7] border border-gray-300"
                         />
                         <span className="

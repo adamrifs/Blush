@@ -356,6 +356,7 @@ const Checkout = () => {
                                 cardTemplate={cardTemplate}
                                 setCardTemplate={setCardTemplate}
                                 previewHTML={previewHTML}
+                                setPreviewHTML={setPreviewHTML}
                                 clearCardData={clearCardData}
 
                                 validateDetails={validateDetails}

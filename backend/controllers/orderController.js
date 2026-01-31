@@ -5,83 +5,37 @@ const AdminSettings = require('../models/AdminSettings');
 const { sendEmail } = require('../config/emailSender');
 const Admin = require("../models/adminSchema");
 const firebaseAdmin = require("../config/firebaseAdmin");
+const { sendNewOrderEmail, sendOrderCancelledEmail, sendPaymentFailedEmail } = require("../services/notificationEmails");
+const { notifyAdmins } = require("../services/orderNotifications");
+const OrderNotification = require('../models/OrderNotification')
 
 exports.createOrder = async (req, res) => {
   try {
-    
-    if (!req.body.cardMessage) {
-      req.body.cardMessage = {
-        option: "no_card",
-        messageHTML: "",
-        messageText: "",
-        template: ""
-      };
+
+    // ✅ ONLY for COD / NO PAYMENT
+    if (req.body.paymentMethod !== "cod") {
+      return res.status(400).json({
+        message: "Order must be created after payment confirmation",
+      });
     }
 
-    // 2️⃣ CREATE & SAVE ORDER
-    const order = new Order(req.body);
+    const order = new Order({
+      ...req.body,
+      payment: {
+        method: "cod",
+        status: "pending",
+      },
+    });
+
     await order.save();
 
-    // 3️⃣ NOTIFICATIONS (Socket + Email + Push)
-    try {
-      const adminSettingsList = await AdminSettings.find({
-        pushTokens: { $exists: true, $ne: [] }
-      });
+    await OrderNotification.create({
+      title: 'New Order Received',
+      message: `Order #${order._id} has been placed`
+    });
 
+    await notifyAdmins(order, req.app.locals.io);
 
-
-      const io = req.app.locals.io;
-      let allPushTokens = [];
-
-      for (const settings of adminSettingsList) {
-
-        // 🔔 SOCKET NOTIFICATION (Admin panel OPEN)
-        if (io) {
-          io.to(`admin_${settings.adminId}`).emit("notification", {
-            type: "order_created",
-            title: "New Order",
-            message: `Order #${order._id} has been placed`,
-            orderId: order._id,
-            time: new Date(),
-          });
-        }
-
-        // 📧 EMAIL NOTIFICATION
-        if (settings.emailEnabled && settings.email) {
-          await sendEmail(
-            settings.email,
-            `New Order #${order._id}`,
-            `<p><strong>New Order Received</strong></p>
-             <p>Order ID: ${order._id}</p>`
-          );
-        }
-
-        // 📲 COLLECT PUSH TOKENS
-        if (settings.pushTokens && settings.pushTokens.length > 0) {
-          allPushTokens.push(...settings.pushTokens);
-        }
-      }
-
-      // 🚀 PUSH NOTIFICATION (Admin panel CLOSED)
-      if (allPushTokens.length > 0) {
-        const response = await firebaseAdmin.messaging().sendMulticast({
-          tokens: allPushTokens,
-          data: {
-            title: "🛒 New Order Received",
-            body: `Order #${order._id} has been placed`,
-            type: "order_created",
-            orderId: order._id.toString(),
-          },
-        });
-
-        console.log("🔥 FCM response:", response);
-      }
-
-    } catch (notifyErr) {
-      console.log("Notification error (ignored):", notifyErr.message);
-    }
-
-    // 4️⃣ SUCCESS RESPONSE
     res.status(201).json({
       success: true,
       message: "Order created successfully",
@@ -89,7 +43,7 @@ exports.createOrder = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("Create Order Error:", error);
+    console.error("Create Order Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -179,6 +133,17 @@ exports.updateOrderStatus = async (req, res) => {
     order.status = status;
     await order.save();
 
+    // 📧 ORDER CANCELLED EMAIL
+    if (status === "cancelled") {
+      const adminSettingsList = await AdminSettings.find({});
+
+      for (const settings of adminSettingsList) {
+        if (settings.emailEnabled && settings.email) {
+          await sendOrderCancelledEmail(settings.email, order);
+        }
+      }
+    }
+
     // 🔥 SEND PUSH NOTIFICATION IF USER IS SUBSCRIBED
     if (order.userId && order.userId.subscription) {
       await sendPushNotification(order.userId.subscription, {
@@ -232,4 +197,14 @@ exports.getOrderBySessionId = async (req, res) => {
   }
 };
 
+exports.markAllOrdersRead = async (req, res) => {
+  const result = await Order.updateMany(
+    { isReadByAdmin: false },
+    { $set: { isReadByAdmin: true } }
+  );
+
+  console.log("Orders marked read:", result.modifiedCount);
+
+  res.json({ success: true });
+};
 

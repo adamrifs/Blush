@@ -6,6 +6,7 @@ const Overview = () => {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -15,32 +16,50 @@ const Overview = () => {
 
   const fetchAllData = async () => {
     try {
-      // GET ORDERS
-      const ordersRes = await axios.get(`${serverUrl}/orders/admin/all`, {
-        withCredentials: true
-      });
-      setOrders(ordersRes.data.orders || []);
+      setLoading(true);
 
-      // GET CUSTOMERS
-      const customersRes = await axios.get(`${serverUrl}/customers/getCustomers`, {
-        withCredentials: true
-      });
+      // 1️⃣ Fetch orders FIRST
+      const ordersRes = await axios.get(
+        `${serverUrl}/orders/admin/all`,
+        { withCredentials: true }
+      );
+
+      const fetchedOrders = ordersRes.data.orders || [];
+      setOrders(fetchedOrders);
+      setRecentOrders(fetchedOrders.slice(0, 5));
+
+      // 2️⃣ Fetch customers
+      const customersRes = await axios.get(
+        `${serverUrl}/customers/getCustomers`,
+        { withCredentials: true }
+      );
       setCustomers(customersRes.data.customers || []);
 
-      // GET PRODUCTS
-      const productsRes = await axios.get(`${serverUrl}/product/getProduct`, {
-        withCredentials: true
-      });
+      // 3️⃣ Fetch products
+      const productsRes = await axios.get(
+        `${serverUrl}/product/getProduct`,
+        { withCredentials: true }
+      );
       setProducts(productsRes.data.products || []);
 
       setLoading(false);
     } catch (error) {
-      console.log("Dashboard Fetch Error:", error);
+      console.error("Dashboard Fetch Error:", error);
       setLoading(false);
     }
   };
 
-  console.log(orders)
+  useEffect(() => {
+    if (!loading && orders.length > 0) {
+      axios.patch(
+        `${serverUrl}/orders/admin/mark-read`,
+        {},
+        { withCredentials: true }
+      );
+    }
+  }, [loading]);
+
+  // console.log(orders)
   // ------------------ Calculations ------------------
 
   const totalOrders = orders.length;
@@ -58,13 +77,31 @@ const Overview = () => {
     .reduce((sum, o) => sum + (o.payment?.amount || 0), 0);
 
 
-  const recentOrders = orders.slice(0, 5);
-
   if (loading) {
     return <div className="flex items-center justify-center py-20">
       <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-gray-700" />
     </div>;
   }
+
+
+  // 🔹 Check if order is new (within last 10 minutes)
+  const isNewOrder = (createdAt) => {
+    const now = new Date();
+    const orderTime = new Date(createdAt);
+    const diffMinutes = (now - orderTime) / 1000 / 60;
+    return diffMinutes < 10;
+  };
+
+  // 🔹 Time ago formatter
+  const timeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+
+    if (seconds < 60) return "just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} mins ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hrs ago`;
+
+    return `${Math.floor(seconds / 86400)} days ago`;
+  };
 
   return (
     <div className="p-6 overflow-y-auto font-Poppins">
@@ -98,15 +135,30 @@ const Overview = () => {
                 <th className="py-2">Customer</th>
                 <th className="py-2">Total</th>
                 <th className="py-2">Status</th>
+                <th className="py-2">Time</th>
               </tr>
             </thead>
 
             <tbody>
               {recentOrders.map((order) => (
-                <tr key={order._id} className="border-b border-gray-200">
-                  <td className="py-2">{order._id}</td>
-                  <td className="py-2">{order.shipping?.receiverName || "Unknown"}</td>
-                  <td className="py-2">AED {order.payment?.amount || order.totals?.grandTotal || 0}</td>
+                <tr
+                  key={order._id}
+                  className="border-b border-gray-200"
+                >
+                  <td className="py-2 flex items-center gap-2">
+                    <span>{order._id}</span>
+                    {!order.isReadByAdmin && (
+                      <span className="text-xs bg-rose-500 text-white px-2 py-0.5 rounded">
+                        NEW
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2">
+                    {order.shipping?.receiverName || "Unknown"}
+                  </td>
+                  <td className="py-2">
+                    AED {order.payment?.amount || order.totals?.grandTotal || 0}
+                  </td>
 
                   <td
                     className={`py-2 ${order.status?.toLowerCase() === "pending"
@@ -115,6 +167,10 @@ const Overview = () => {
                       }`}
                   >
                     {order.status}
+                  </td>
+
+                  <td className="py-2 text-sm text-gray-500">
+                    {timeAgo(order.createdAt)}
                   </td>
                 </tr>
               ))}

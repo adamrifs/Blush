@@ -115,28 +115,27 @@ const PaymentStep = ({
         try {
             // ===================== TABBY =====================
             if (method === "tabby") {
-                showToast("Comming Soon...", "info")
-                // const res = await api.post(`${serverUrl}/payment/tabby`, {
-                //     cart,
-                //     totals: {
-                //         grandTotal: Number(grandTotalDisplay),
-                //     },
-                //     shipping: {
-                //         receiverName,
-                //         receiverPhone,
-                //         emirate: deliveryEmirate,
-                //         area,
-                //         street,
-                //     },
-                //     user: {
-                //         email: user.email,
-                //         phone: user.phone,
-                //         name: user.name || receiverName,
-                //     },
-                // });
+                // showToast("Comming Soon...", "info")
+                const res = await api.post(`${serverUrl}/payment/tabby`, {
+                    cart,
+                    totals: { grandTotal: Number(grandTotalDisplay) },
+                    shipping: {
+                        receiverName,
+                        receiverPhone,
+                        emirate: deliveryEmirate,
+                        area,
+                        street,
+                    },
+                    user: {
+                        email: user.email,
+                        phone: user.phone,
+                        name: user.name || receiverName,
+                    },
+                });
 
-                // window.location.href = res.data.url;
-                // return;
+                window.location.href = res.data.url;
+                return;
+
             }
 
             // ===================== STRIPE (CARD / APPLE PAY) =====================

@@ -15,6 +15,7 @@ const Settings = ({ setIsAuth }) => {
   const [saving, setSaving] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [deliveryCharges, setDeliveryCharges] = useState([]);
 
   const [settings, setSettings] = useState({
     pushEnabled: false,
@@ -80,6 +81,7 @@ const Settings = ({ setIsAuth }) => {
           email: data.settings.email,
         });
       }
+      setDeliveryCharges(data.settings.deliveryCharges || []);
 
       //   toast.success("Settings loaded");
     } catch (err) {
@@ -173,6 +175,22 @@ const Settings = ({ setIsAuth }) => {
     }
   };
 
+  // Delivery charges drop downs
+  const [showAllCharges, setShowAllCharges] = useState(false);
+
+  const EMIRATES = [
+    "Abu Dhabi",
+    "Dubai",
+    "Sharjah",
+    "Ajman",
+    "Al Ain"
+  ];
+
+  const SLOTS = [
+    "Standard",
+    "Priority",
+    "Bullet"
+  ];
 
 
   return (
@@ -266,7 +284,145 @@ const Settings = ({ setIsAuth }) => {
         >
           Save Email
         </button>
+
+        <button
+          onClick={async () => {
+            try {
+              await fetch(`${serverUrl}/settings/test-email`, {
+                method: "POST",
+                credentials: "include",
+              });
+              toast.success("Test email sent successfully");
+            } catch {
+              toast.error("Failed to send test email");
+            }
+          }}
+          className="mt-3 ml-5 px-6 py-2 cursor-pointer bg-[#2F3746] text-white rounded-lg shadow hover:bg-[#5b6983] transition-all font-Poppins"
+        >
+          Send Test Email
+        </button>
+
       </div>
+
+      {/* ------------------------- DELIVERY CHARGES ---------------------------- */}
+      <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-6 max-w-2xl mt-10">
+        <h3 className="text-xl font-semibold mb-4 font-Poppins">
+          Delivery Charges
+        </h3>
+
+        <p className="text-sm text-gray-500 mb-6 font-Poppins">
+          Set delivery charges per emirate and slot. Prices apply instantly on checkout.
+        </p>
+
+        <div className="space-y-4">
+          {(showAllCharges ? deliveryCharges : deliveryCharges.slice(0, 3)).map((row, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center border border-gray-200 p-4 rounded-xl"
+            >
+              {/* Emirate Dropdown */}
+              <select
+                value={row.emirate}
+                onChange={(e) => {
+                  const copy = [...deliveryCharges];
+                  copy[index].emirate = e.target.value;
+                  setDeliveryCharges(copy);
+                }}
+                className="border border-gray-200 rounded-lg px-3 py-2 font-Poppins cursor-pointer"
+              >
+                <option value="">Select Emirate</option>
+                {EMIRATES.map((e) => (
+                  <option key={e} value={e}>{e}</option>
+                ))}
+              </select>
+
+              {/* Slot Dropdown */}
+              <select
+                value={row.slot}
+                onChange={(e) => {
+                  const copy = [...deliveryCharges];
+                  copy[index].slot = e.target.value;
+                  setDeliveryCharges(copy);
+                }}
+                className="border border-gray-200 rounded-lg px-3 py-2 font-Poppins cursor-pointer"
+              >
+                <option value="">Select Slot</option>
+                {SLOTS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+
+              {/* Price Input */}
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={row.price}
+                placeholder="AED"
+                onChange={(e) => {
+                  const copy = [...deliveryCharges];
+                  copy[index].price = e.target.value;
+                  setDeliveryCharges(copy);
+                }}
+
+                className="border border-gray-200 rounded-lg px-3 py-2 font-Poppins cursor-pointer"
+              />
+
+              {/* Remove Button */}
+              <button
+                onClick={() => {
+                  const copy = deliveryCharges.filter((_, i) => i !== index);
+                  setDeliveryCharges(copy);
+                }}
+                className="text-red-600 text-sm font-semibold hover:underline cursor-pointer"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* show more button */}
+        {deliveryCharges.length > 3 && (
+          <button
+            onClick={() => setShowAllCharges(prev => !prev)}
+            className="text-sm text-[#6f52ff] font-medium hover:underline font-Poppins"
+          >
+            {showAllCharges ? "Show less" : `Show more (${deliveryCharges.length - 3} more)`}
+          </button>
+        )}
+        <div className="flex gap-4 mt-6">
+
+          {/* ACTION BUTTONS */}
+          <button
+            onClick={() =>
+              setDeliveryCharges([
+                ...deliveryCharges,
+                { emirate: "", slot: "", price: 0 }
+              ])
+            }
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 font-Poppins cursor-pointer"
+          >
+            + Add Delivery Charge
+          </button>
+
+          <button
+            onClick={() => {
+              const normalized = deliveryCharges.map(d => ({
+                ...d,
+                price: Number(d.price || 0)
+              }));
+              saveSettings({ deliveryCharges: normalized });
+            }}
+
+            className="px-6 py-2 bg-[#2F3746] text-white rounded-lg shadow hover:bg-[#5b6983] font-Poppins cursor-pointer"
+          >
+            Save Delivery Charges
+          </button>
+        </div>
+      </div>
+
+
       {/* LOGOUT SECTION */}
       <div className="bg-white shadow-sm border border-red-200 rounded-2xl p-6 max-w-xl mt-10">
         <h3 className="text-xl font-semibold mb-2 font-Poppins text-red-600">

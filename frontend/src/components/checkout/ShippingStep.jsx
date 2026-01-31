@@ -65,7 +65,15 @@ const ShippingStep = ({
 
     const selectedSlot = deliverySlot;
     const setSelectedSlot = setDeliverySlot;
+    const [deliveryCharges, setDeliveryCharges] = useState([]);
 
+    useEffect(() => {
+        api.get(`${serverUrl}/settings`).then(res => {
+            setDeliveryCharges(res.data.settings.deliveryCharges || []);
+        });
+    }, []);
+
+    // console.log("delivery charges",deliveryCharges)
     // ------------------ SLOT LOGIC (UNCHANGED UI) ------------------
 
     const parseTimeToDate = (timeStr) => {
@@ -96,19 +104,27 @@ const ShippingStep = ({
         );
     };
 
+
+    const getDeliveryPrice = (emirate, slot) => {
+        const found = deliveryCharges.find(
+            d => d.emirate === emirate && d.slot === slot
+        );
+        return found ? found.price : 0;
+    };
+
     const deliverySlots = {
         abuDhabi: [
             {
                 title: "Standard",
                 desc: "7 hour slot",
-                price: 20,
+                price: getDeliveryPrice(selectedEmirate, "Standard"),
                 type: "multiple",
                 options: ["09:00 AM – 04:00 PM", "04:00 PM – 11:00 PM"]
             },
             {
                 title: "Priority",
                 desc: "3 hour slot",
-                price: 40,
+                price: getDeliveryPrice(selectedEmirate, "Priority"),
                 type: "multiple",
                 options: [
                     "10:00 AM – 01:00 PM",
@@ -120,7 +136,7 @@ const ShippingStep = ({
             {
                 title: "Bullet",
                 desc: "60 Minutes Slot",
-                price: 100,
+                price: getDeliveryPrice(selectedEmirate, "Bullet"),
                 type: "multiple",
                 options: [
                     "10:00 AM – 11:00 AM",
@@ -143,20 +159,20 @@ const ShippingStep = ({
             {
                 title: "Standard",
                 desc: "4 hour slot",
-                price: 60,
+                price: getDeliveryPrice(selectedEmirate, "Standard"),
                 type: "multiple",
                 options: ["02:00 PM – 06:00 PM", "06:00 PM – 10:00 PM"]
             },
             {
                 title: "Priority",
                 desc: "Not available in your emirate",
-                price: 40,
+                price: getDeliveryPrice(selectedEmirate, "Priority"),
                 type: "disabled"
             },
             {
                 title: "Bullet",
                 desc: "Not available in your emirate",
-                price: 100,
+                price: getDeliveryPrice(selectedEmirate, "Bullet"),
                 type: "disabled"
             }
         ]
@@ -286,7 +302,7 @@ const ShippingStep = ({
             };
 
             await api.post(`${serverUrl}/address/addAddress`, payload, {
-                showLoader: true,   
+                showLoader: true,
             });
             showToast("Address saved successfully", "success");
             setCurrentStep("payment");
@@ -438,7 +454,7 @@ const ShippingStep = ({
                                 <div
                                     key={index}
                                     onClick={() => {
-                                        // 🔥 FIRE GLOBAL EMIRATE CHANGE MODAL
+                                        //  FIRE GLOBAL EMIRATE CHANGE MODAL
                                         window.dispatchEvent(
                                             new CustomEvent("announcementEmirateChange", { detail: item })
                                         );
