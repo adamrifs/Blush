@@ -4,6 +4,7 @@ import { serverUrl } from "../../urls";
 import { IoSearch } from "react-icons/io5";
 import { CheckCircle, Clock, Truck, Package } from "lucide-react";
 import CustomDropdown from "./CustomSelect";
+import PaymentBadge from "./PaymentBadge";
 
 const AdminOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -357,6 +358,8 @@ const AdminOrders = () => {
                                                     <h2 className="font-semibold text-lg flex items-center gap-2">
                                                         Order #{order._id}
 
+                                                        {/* 💳 Payment Method */}
+                                                        <PaymentBadge method={order.payment?.method} />
                                                         {/* 🆕 Card badge */}
                                                         <span
                                                             className={`px-3 py-1 rounded-full text-xs font-medium

@@ -11,39 +11,42 @@ const OrderNotification = require('../models/OrderNotification')
 
 exports.createOrder = async (req, res) => {
   try {
-
-    // ✅ ONLY for COD / NO PAYMENT
-    if (req.body.paymentMethod !== "cod") {
+    if (req.body.payment?.method !== "cod") {
       return res.status(400).json({
-        message: "Order must be created after payment confirmation",
+        message: "Only COD orders are allowed here",
       });
     }
 
     const order = new Order({
       ...req.body,
       payment: {
-        method: "cod",
+        ...req.body.payment,
         status: "pending",
+        transactionId: null,
+        orderId: null,
       },
     });
 
     await order.save();
 
     await OrderNotification.create({
-      title: 'New Order Received',
-      message: `Order #${order._id} has been placed`
+      title: "New COD Order 💐",
+      message: `COD Order #${order._id} placed`
     });
 
-    await notifyAdmins(order, req.app.locals.io);
+    // 3️⃣ REALTIME NOTIFICATION (SAFE)
+    if (req.app.locals.io) {
+      await notifyAdmins(order, req.app);
+    }
 
     res.status(201).json({
       success: true,
-      message: "Order created successfully",
+      message: "COD Order placed successfully",
       order,
     });
 
   } catch (error) {
-    console.error("Create Order Error:", error);
+    console.error("Create COD Order Error:", error);
     res.status(500).json({ message: error.message });
   }
 };

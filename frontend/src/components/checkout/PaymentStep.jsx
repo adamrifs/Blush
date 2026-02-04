@@ -11,6 +11,7 @@ import { serverUrl } from "../../../url";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/axiosInstance.js";
+import { useLoader } from "../../context/LoaderContext.jsx";
 
 const PaymentStep = ({
     deliverySlot,
@@ -25,6 +26,7 @@ const PaymentStep = ({
     cardMessageData
 }) => {
     const { cart, setCart, sessionId, fetchCartCount } = useContext(ProductContext);
+    const { setLoading ,loading} = useLoader()
     const { showToast } = useToast()
     const navigate = useNavigate()
 
@@ -36,7 +38,7 @@ const PaymentStep = ({
             </div>
         );
     }
-    console.log('cart', cart)
+    // console.log('cart', cart)
     const deliveryCharge = deliverySlot?.price || 0;
 
 
@@ -106,16 +108,81 @@ const PaymentStep = ({
         }
 
         const user = JSON.parse(localStorage.getItem("user"));
-
         if (!user) {
             showToast("Please login to continue", "warning");
             return;
         }
 
         try {
+            // 🌸 START GLOBAL LOADER
+            setLoading(true, method === "cod"
+                ? "Placing your order…"
+                : "Redirecting to payment…"
+            );
+
+            // ===================== CASH ON DELIVERY =====================
+            if (method === "cod") {
+
+                const payload = {
+                    userId: user._id,
+
+                    items: cart.map((item) => ({
+                        productId: item.productId._id,
+                        quantity: item.quantity,
+                        addons: item.addons || []
+                    })),
+
+                    shipping: {
+                        receiverName,
+                        receiverPhone,
+                        country: "United Arab Emirates",
+                        emirate: deliveryEmirate,
+                        area,
+                        street,
+                        building,
+                        flat,
+                        deliveryDate,
+                        deliverySlot: deliverySlot?.title,
+                        deliveryCharge: Number(deliveryExclusiveDisplay),
+                    },
+
+                    payment: {
+                        method: "cod",
+                        status: "pending",
+                        amount: Number(grandTotalDisplay),
+                        vat: Number(vatDisplay),
+                    },
+
+                    totals: {
+                        bagTotal: Number(bagTotalInclusiveDisplay),
+                        deliveryCharge: Number(deliveryExclusiveDisplay),
+                        vatAmount: Number(vatDisplay),
+                        grandTotal: Number(grandTotalDisplay),
+                    },
+
+                    cardMessage: cardMessageData,
+                };
+
+                const res = await api.post(
+                    `${serverUrl}/orders/create`,
+                    payload,
+                    { withCredentials: true }
+                );
+
+                await api.delete(`${serverUrl}/cart/clearCart`, {
+                    data: { sessionId },
+                    withCredentials: true,
+                });
+
+                setCart([]);
+                fetchCartCount();
+
+                navigate("/order-success", { state: { order: res.data.order } });
+                return;
+            }
+
             // ===================== TABBY =====================
             if (method === "tabby") {
-                // showToast("Comming Soon...", "info")
                 const res = await api.post(`${serverUrl}/payment/tabby`, {
                     cart,
                     totals: { grandTotal: Number(grandTotalDisplay) },
@@ -135,10 +202,9 @@ const PaymentStep = ({
 
                 window.location.href = res.data.url;
                 return;
-
             }
 
-            // ===================== STRIPE (CARD / APPLE PAY) =====================
+            // ===================== STRIPE =====================
             if (method === "card" || method === "applepay") {
                 const res = await api.post(
                     `${serverUrl}/payment/create-stripe-session`,
@@ -174,8 +240,12 @@ const PaymentStep = ({
         } catch (error) {
             console.error(error);
             showToast("Payment initiation failed. Please try again.", "error");
+        } finally {
+            // 🌸 STOP GLOBAL LOADER
+            setLoading(false);
         }
     };
+
 
 
 
@@ -454,6 +524,24 @@ const PaymentStep = ({
                         </div>
                     </div>
 
+                    {/* ------- Cash on Delivery ------- */}
+                    <div
+                        className="flex items-center justify-between py-5 border-b border-gray-200"
+                        onClick={() => setMethod("cod")}
+                    >
+                        <div className="flex items-center gap-4 cursor-pointer">
+                            <div className={`${radioBase} ${method === "cod" && radioSelected}`}>
+                                {method === "cod" && (
+                                    <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
+                                )}
+                            </div>
+                            <p className="text-lg">Cash on Delivery</p>
+                        </div>
+
+                        <p className="text-gray-500 font-medium">Pay when you receive</p>
+                    </div>
+
+
                     {/* ------- Terms & Conditions ------- */}
                     <div
                         className="flex items-center gap-4 mt-3 cursor-pointer"
@@ -472,18 +560,21 @@ const PaymentStep = ({
 
                     {/* ------- Pay Now Button ------- */}
                     <button
-                        className="mt-8 w-full py-4 rounded-full text-white text-lg font-medium
-          bg-gradient-to-r from-[#b89bff] to-[#d6b8ff]
-          border border-[#bca8ff]
-          shadow-[0_2px_8px_rgba(0,0,0,0.1)]
-          hover:from-[#a27aff] hover:to-[#cda5ff]
-          hover:shadow-[0_4px_14px_rgba(107,70,193,0.3)]
-          transition-all duration-300 cursor-pointer"
+                        disabled={loading}
                         onClick={handlePayment}
-                    // onClick={createOrder}
+                        className={`mt-8 w-full py-4 rounded-full text-white text-lg font-medium
+    bg-gradient-to-r from-[#b89bff] to-[#d6b8ff]
+    border border-[#bca8ff]
+    shadow-[0_2px_8px_rgba(0,0,0,0.1)]
+    transition-all duration-300
+    ${loading ? "opacity-60 cursor-not-allowed" : "hover:from-[#a27aff] hover:to-[#cda5ff]"}
+  `}
                     >
-                        Pay Now (AED {grandTotalDisplay})
+                        {method === "cod"
+                            ? "Place Order (COD)"
+                            : `Pay Now (AED ${grandTotalDisplay})`}
                     </button>
+
                 </div>
             </div>
         </div>

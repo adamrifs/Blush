@@ -35,10 +35,18 @@ const orderSchema = new mongoose.Schema({
 
     // 💳 PAYMENT DETAILS
     payment: {
-        method: { type: String, enum: ["card", "applepay", "tabby", "tamara"], required: true },
-        status: { type: String, enum: ["pending", "paid", "failed"], default: "pending" },
-        transactionId: { type: String },      // Paymob transaction / payment key
-        orderId: { type: String },            // Paymob order id
+        method: {
+            type: String,
+            enum: ["card", "applepay", "tabby", "tamara", "cod"], // ✅ ADD COD
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ["pending", "paid", "failed"],
+            default: "pending"
+        },
+        transactionId: { type: String },
+        orderId: { type: String },
         amount: { type: Number, required: true },
         vat: { type: Number, required: true }
     },

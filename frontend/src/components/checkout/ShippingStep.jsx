@@ -116,11 +116,11 @@ const ShippingStep = ({
     const handleSelectSlot = (slot, time) => {
         const price = getDeliveryPrice(selectedEmirate, slot.title);
 
-        console.log("SELECTED SLOT:", {
-            emirate: selectedEmirate,
-            title: slot.title,
-            price: getDeliveryPrice(selectedEmirate, slot.title)
-        });
+        // console.log("SELECTED SLOT:", {
+        //     emirate: selectedEmirate,
+        //     title: slot.title,
+        //     price: getDeliveryPrice(selectedEmirate, slot.title)
+        // });
 
         setSelectedSlot({
             ...slot,
