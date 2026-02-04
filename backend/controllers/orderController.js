@@ -26,6 +26,7 @@ exports.createOrder = async (req, res) => {
         orderId: null,
       },
     });
+    console.log("ORDER FOR EMAIL:", JSON.stringify(order, null, 2));
 
     await order.save();
 

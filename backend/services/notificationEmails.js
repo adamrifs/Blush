@@ -1,18 +1,20 @@
 const { sendEmail } = require("../config/emailSender");
-const { baseTemplate, orderTable } = require("../utils/emailTemplates");
+const { baseTemplate, orderTable, orderPlacedContent } = require("../utils/emailTemplates");
 
 exports.sendNewOrderEmail = async (to, order) => {
   const html = baseTemplate({
-    title: "🛒 New Order Received",
-    content: `
-      <p>A new order has been placed.</p>
-      <p><strong>Order ID:</strong> ${order._id}</p>
-      ${orderTable(order)}
-    `
+    title: `🛒 New Order #${order._id}`,
+    content: orderPlacedContent(order)
   });
 
-  await sendEmail(to, `New Order #${order._id}`, html);
+  try {
+    await sendEmail(to, `New Order #${order._id}`, html);
+  } catch (err) {
+    console.error("EMAIL FAILED:", err.message);
+  }
 };
+
+
 
 exports.sendOrderCancelledEmail = async (to, order) => {
   const html = baseTemplate({
