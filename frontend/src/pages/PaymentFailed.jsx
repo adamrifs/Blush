@@ -1,13 +1,25 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { XCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import floral from "../assets/floral.png";
+import api from "../utils/axiosInstance";
+import { useEffect } from "react";
+import { useLoader } from "../context/LoaderContext";
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
+  const orderId = new URLSearchParams(location.search).get("order");
+
+  useEffect(() => {
+    if (orderId) {
+      api.post(`/payment/tabby/fail/${orderId}`);
+    }
+  }, [orderId]);
+  
   return (
     <div>
       <Navbar />

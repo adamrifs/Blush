@@ -6,16 +6,13 @@ const OrderNotification = require('../models/OrderNotification')
 
 exports.handleTabbyWebhook = async (req, res) => {
   try {
-    console.log("🔥 TABBY WEBHOOK RECEIVED");
-
-    // ✅ Only process authorized payments
     if (req.body.type !== "payment.authorized") {
       return res.status(200).send("Ignored");
     }
 
     const paymentId = req.body.data.id;
 
-    // 🔐 VERIFY PAYMENT WITH TABBY
+    // 1️⃣ VERIFY
     const verifyRes = await axios.get(
       `https://api.tabby.ai/api/v2/payments/${paymentId}`,
       {
@@ -28,20 +25,20 @@ exports.handleTabbyWebhook = async (req, res) => {
     const payment = verifyRes.data;
 
     if (payment.status !== "AUTHORIZED") {
-      return res.status(400).send("Payment not authorized");
+      return res.status(400).send("Not authorized");
     }
 
-    // 🛑 PREVENT DUPLICATE ORDERS
-    const existingOrder = await Order.findOne({
-      "payment.transactionId": paymentId,
-    });
+    // 2️⃣ FIND ORDER
+    const orderId = payment.order.reference_id;
+    const order = await Order.findById(orderId);
 
-    if (existingOrder) {
-      console.log("⚠️ Tabby order already processed:", paymentId);
+    if (!order) return res.status(404).send("Order not found");
+
+    if (order.payment.status === "paid") {
       return res.status(200).send("Already processed");
     }
 
-    // 💰 CAPTURE PAYMENT
+    // 3️⃣ CAPTURE
     await axios.post(
       `https://api.tabby.ai/api/v2/payments/${paymentId}/capture`,
       { amount: payment.amount.amount },
@@ -52,43 +49,22 @@ exports.handleTabbyWebhook = async (req, res) => {
       }
     );
 
-    // 🧾 CREATE ORDER
-    const order = new Order({
-      userEmail: payment.buyer.email,
-      items: payment.order.items.map(item => ({
-        name: item.title,
-        quantity: item.quantity,
-        price: item.unit_price,
-      })),
-      payment: {
-        method: "tabby",
-        status: "paid",
-        transactionId: paymentId,
-        amount: payment.amount.amount,
-      },
-      totals: {
-        grandTotal: payment.amount.amount,
-      },
-    });
+    // 4️⃣ FINALIZE ORDER
+    order.payment.status = "paid";
+    order.status = "processing";
+    order.payment.transactionId = paymentId;
+    order.payment.amount = payment.amount.amount;
 
     await order.save();
-    console.log("🟢 Tabby order created:", order._id);
 
-    await OrderNotification.create({
-      title: 'New Order Received',
-      message: `Order #${order._id} has been placed`
-    });
-
-    // 🔔 NOTIFY ADMINS
+    // 5️⃣ NOTIFICATIONS + CART CLEANUP
     await notifyAdmins(order, req.app);
+    await Cart.deleteMany({ userId: order.userId });
 
-    // 🧹 CLEAR CART
-    await Cart.deleteMany({ userEmail: payment.buyer.email });
-
-    return res.status(200).send("Order created");
+    res.status(200).send("Order completed");
 
   } catch (err) {
-    console.error("❌ Tabby webhook error:", err);
-    return res.status(500).send("Webhook failed");
+    console.error("Tabby webhook error:", err);
+    res.status(500).send("Webhook failed");
   }
 };

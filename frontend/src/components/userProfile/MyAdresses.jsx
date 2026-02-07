@@ -11,6 +11,13 @@ const MyAdresses = () => {
     const [address, setAddress] = useState([])
 
 
+    const formatDeliverySlot = (slot) => {
+        if (!slot) return "-";
+        if (typeof slot === "string") return slot; // old addresses
+        return `${slot.title} (${slot.time})`;     // new addresses
+    };
+
+
     // address
 
     const fetchUserAddress = async () => {
@@ -95,7 +102,7 @@ const MyAdresses = () => {
                                 </p>
                                 <p className="text-sm">
                                     <span className="font-semibold text-gray-900">Delivery Slot:</span>{" "}
-                                    {address.deliverySlot}
+                                    {formatDeliverySlot(address.deliverySlot)}
                                 </p>
                                 <p className="text-sm">
                                     <span className="font-semibold text-gray-900">Delivery Charge:</span>{" "}

@@ -15,6 +15,13 @@ const COLORS = [
     "#6366F1", "#EC4899", "#10B981", "#F59E0B", "#3B82F6", "#EF4444", "#8B5CF6"
 ];
 
+const percentChange = (current, previous) => {
+    if (previous === 0 && current === 0) return 0;
+    if (previous === 0 && current > 0) return 100;
+    if (previous === 0) return 0;
+    return ((current - previous) / previous) * 100;
+};
+
 const OrderAnalytics = () => {
     const [orders, setOrders] = useState([]);
     const [revenueData, setRevenueData] = useState([]);
@@ -23,6 +30,18 @@ const OrderAnalytics = () => {
 
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
+
+    const [revenueStats, setRevenueStats] = useState({
+        today: 0,
+        yesterday: 0,
+        week: 0,
+        month: 0,
+        stripe: 0,
+        tabby: 0,
+        cod: 0,
+        delivered: 0,
+    });
+
 
 
     const fetchOrders = async () => {
@@ -35,12 +54,69 @@ const OrderAnalytics = () => {
     const processAnalytics = (all) => {
         const filtered = filterByDateRange(all);
 
+        const now = new Date();
+        const todayStr = now.toISOString().split("T")[0];
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        let stats = {
+            today: 0,
+            yesterday: 0,
+            week: 0,
+            month: 0,
+            stripe: 0,
+            tabby: 0,
+            cod: 0,
+            delivered: 0,
+        };
+
         // Orders per day
         const ordersGroupedByDate = {};
+        const revenuePerDay = {};
+        const emirateMap = {};
+
         filtered.forEach(order => {
             const date = order.createdAt?.split("T")[0];
+            const orderDate = new Date(order.createdAt);
+
+            const revenue =
+                order.payment?.status === "paid" ||
+                    (order.payment?.method === "cod" && order.status === "delivered")
+                    ? (order.payment?.amount || order.totals?.grandTotal || 0)
+                    : 0;
+
+            // 📆 Time-based revenue
+            if (date === todayStr) stats.today += revenue;
+            if (date === yesterdayStr) stats.yesterday += revenue;
+            if (orderDate >= startOfWeek) stats.week += revenue;
+            if (orderDate >= startOfMonth) stats.month += revenue;
+
+            // 💳 Payment-wise
+            if (order.payment?.method === "stripe") stats.stripe += revenue;
+            if (order.payment?.method === "tabby") stats.tabby += revenue;
+            if (order.payment?.method === "cod" && order.status === "delivered") {
+                stats.cod += revenue;
+            }
+
+            // 📦 Delivered revenue
+            if (order.status === "delivered") stats.delivered += revenue;
+
+            // Charts
             ordersGroupedByDate[date] = (ordersGroupedByDate[date] || 0) + 1;
+            revenuePerDay[date] = (revenuePerDay[date] || 0) + revenue;
+
+            const emirate = order.shipping?.emirate || "Unknown";
+            emirateMap[emirate] = (emirateMap[emirate] || 0) + 1;
         });
+
+        setRevenueStats(stats);
 
         setOrdersPerDay(
             Object.keys(ordersGroupedByDate).map(date => ({
@@ -49,27 +125,12 @@ const OrderAnalytics = () => {
             }))
         );
 
-        // Revenue per day
-        const revenuePerDay = {};
-        filtered.forEach(order => {
-            const date = order.createdAt?.split("T")[0];
-            const total = order.totals?.grandTotal || 0;
-            revenuePerDay[date] = (revenuePerDay[date] || 0) + total;
-        });
-
         setRevenueData(
             Object.keys(revenuePerDay).map(date => ({
                 date,
                 revenue: revenuePerDay[date]
             }))
         );
-
-        // Orders by Emirate
-        const emirateMap = {};
-        filtered.forEach(order => {
-            const emirate = order.shipping?.emirate || "Unknown";
-            emirateMap[emirate] = (emirateMap[emirate] || 0) + 1;
-        });
 
         setOrdersByEmirate(
             Object.keys(emirateMap).map(name => ({
@@ -78,6 +139,7 @@ const OrderAnalytics = () => {
             }))
         );
     };
+
 
     useEffect(() => {
         fetchOrders();
@@ -98,10 +160,72 @@ const OrderAnalytics = () => {
         });
     };
 
+    // 📅 Dates
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+    // 💰 Today Revenue (PAID + COD delivered only)
+    const todayRevenue = orders
+        .filter(o =>
+            o.createdAt?.startsWith(today) &&
+            (
+                o.payment?.status === "paid" ||
+                (o.payment?.method === "cod" && o.status === "delivered")
+            )
+        )
+        .reduce((sum, o) => sum + (o.totals?.grandTotal || 0), 0);
+
+    // 💰 Yesterday Revenue
+    const yesterdayRevenue = orders
+        .filter(o =>
+            o.createdAt?.startsWith(yesterday) &&
+            (
+                o.payment?.status === "paid" ||
+                (o.payment?.method === "cod" && o.status === "delivered")
+            )
+        )
+        .reduce((sum, o) => sum + (o.totals?.grandTotal || 0), 0);
+
+    // 📈 Trend %
+    const todayTrend = percentChange(todayRevenue, yesterdayRevenue);
+
     return (
         <div className="p-6">
 
             <h1 className="text-3xl font-semibold mb-8">Order Analytics</h1>
+            {/* 🔥 Revenue Breakdown */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 font-Poppins">
+
+                <RevenueCard
+                    label="Today Revenue"
+                    value={todayRevenue}
+                    change={todayTrend}
+                />
+
+                <RevenueCard
+                    label="Yesterday Revenue"
+                    value={yesterdayRevenue}
+                    change={-todayTrend}
+                />
+                <RevenueCard label="This Week Revenue" value={revenueStats.week} />
+                <RevenueCard label="This Month Revenue" value={revenueStats.month} />
+
+            </div>
+
+            {/* 💳 Payment Breakdown */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+
+                <RevenueCard label="Stripe Revenue" value={revenueStats.stripe} />
+                <RevenueCard label="Tabby Revenue" value={revenueStats.tabby} />
+                <RevenueCard label="COD Revenue (Delivered)" value={revenueStats.cod} />
+
+            </div>
+
+            {/* 📦 Delivered Revenue */}
+            <div className="grid grid-cols-1 sm:grid-cols-1 gap-6 mb-10">
+                <RevenueCard label="Delivered Orders Revenue" value={revenueStats.delivered} />
+            </div>
+
             {/* Date Range Filter */}
             <div className="bg-white p-4 rounded-xl shadow-md border border-gray-300 mb-8 flex flex-col md:flex-row gap-4 md:items-end">
 
@@ -192,5 +316,46 @@ const OrderAnalytics = () => {
         </div>
     );
 };
+
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+
+const RevenueCard = ({ label, value, change }) => {
+    const safeChange =
+        typeof change === "number" && isFinite(change) ? change : 0;
+
+    const isPositive = safeChange >= 0;
+
+    const formatChange = (current, previous) => {
+        if (previous === 0 && current > 0) return "New";
+        if (previous === 0 && current === 0) return "0%";
+        return `${percentChange(current, previous).toFixed(1)}%`;
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-300">
+            <p className="text-gray-500 text-sm">{label}</p>
+
+            <h3 className="text-3xl font-bold mt-2 text-[#2F3746]">
+                AED {Number(value || 0).toFixed(2)}
+            </h3>
+
+            <div
+                className={`mt-2 flex items-center gap-1 text-sm font-medium
+                ${isPositive ? "text-green-600" : "text-red-600"}`}
+            >
+                {isPositive ? (
+                    <ArrowUpRight size={18} />
+                ) : (
+                    <ArrowDownRight size={18} />
+                )}
+
+                <span>{formatChange(value, value - safeChange)}</span>
+                <span className="text-gray-400 font-normal">vs previous</span>
+            </div>
+        </div>
+    );
+};
+
+
 
 export default OrderAnalytics;

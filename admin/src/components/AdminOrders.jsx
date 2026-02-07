@@ -31,6 +31,15 @@ const AdminOrders = () => {
     // updating status state map
     const [updatingMap, setUpdatingMap] = useState({});
 
+    // payment filter 
+    const [paymentFilter, setPaymentFilter] = useState("all");
+    const paymentOptions = [
+        { label: "All Payments", value: "all" },
+        { label: "Pending Payment", value: "pending" },
+        { label: "Payment Success", value: "paid" },
+        { label: "Payment Failed", value: "failed" },
+    ];
+
     // helper: format date dd-mm-yyyy
     const formatDate = (dateStr) => {
         if (!dateStr) return "-";
@@ -52,7 +61,7 @@ const AdminOrders = () => {
             const res = await axios.get(`${serverUrl}/orders/admin/all`, {
                 withCredentials: true,
             });
-            console.log(res)
+            // console.log(res)
             const orderList = res.data.orders || [];
             setOrders(orderList);
 
@@ -67,10 +76,17 @@ const AdminOrders = () => {
             // stats
             const pendingCount = orderList.filter((o) => o.status === "pending").length;
             const deliveredCount = orderList.filter((o) => o.status === "delivered").length;
-            const totalRevenue = orderList.reduce(
-                (sum, o) => sum + (o.totals?.grandTotal || 0),
-                0
-            );
+            const totalRevenue = orderList
+                .filter(o =>
+                    o.payment?.status === "paid" ||
+                    (o.payment?.method === "cod" && o.status === "delivered")
+                )
+                .reduce(
+                    (sum, o) =>
+                        sum + (o.payment?.amount || o.totals?.grandTotal || 0),
+                    0
+                );
+
 
             setStats({
                 totalOrders: orderList.length,
@@ -78,6 +94,7 @@ const AdminOrders = () => {
                 delivered: deliveredCount,
                 revenue: totalRevenue,
             });
+
         } catch (err) {
             console.error("fetchOrders error:", err);
         } finally {
@@ -111,65 +128,55 @@ const AdminOrders = () => {
 
         const q = query.trim().toLowerCase();
 
+        // 🔍 Search filter
         if (q !== "") {
             data = data.filter((o) => {
-                // order id partial
-                const idMatch = o._id?.toString().toLowerCase().includes(q);
-
-                // shipping fields
+                const idMatch = o._id?.toLowerCase().includes(q);
                 const nameMatch = o.shipping?.receiverName?.toLowerCase().includes(q);
                 const phoneMatch = o.shipping?.receiverPhone?.toLowerCase().includes(q);
-                const emirateMatch = o.shipping?.emirate?.toLowerCase().includes(q);
-                const areaMatch = o.shipping?.area?.toLowerCase().includes(q);
-                const countryMatch =
-                    (o.shipping?.country || "United Arab Emirates").toLowerCase().includes(q);
-
-                // status
                 const statusMatch = o.status?.toLowerCase().includes(q);
+                const totalMatch = String(o.totals?.grandTotal || "").includes(q);
 
-                // created date (dd-mm-yyyy)
-                const createdDateStr = formatDate(o.createdAt);
-                const dateMatch = createdDateStr.toLowerCase().includes(q);
-
-                // product names inside items
-                const productMatch = (o.items || []).some((item) => {
-                    const productName =
-                        item.productId?.name ||
-                        item.productName ||
-                        (item.productId && item.productId.name) ||
-                        "";
-                    return productName.toLowerCase().includes(q);
-                });
-
-                // totals
-                const totalMatch = String(o.totals?.grandTotal || "").toLowerCase().includes(q);
-
-                return (
-                    idMatch ||
-                    nameMatch ||
-                    phoneMatch ||
-                    emirateMatch ||
-                    areaMatch ||
-                    countryMatch ||
-                    statusMatch ||
-                    dateMatch ||
-                    productMatch ||
-                    totalMatch
-                );
+                return idMatch || nameMatch || phoneMatch || statusMatch || totalMatch;
             });
         }
 
-        // status filter
+        // 📦 Order status filter
         if (statusFilter !== "all") {
             data = data.filter((o) => o.status === statusFilter);
         }
 
-        // date range filter (applied after search + status)
+        // 💳 Payment filter (🔥 THIS MUST BE BEFORE setFiltered)
+        if (paymentFilter !== "all") {
+            data = data.filter((o) => {
+                if (paymentFilter === "pending") {
+                    return o.payment?.status === "pending";
+                }
+
+                if (paymentFilter === "paid") {
+                    return (
+                        o.payment?.status === "paid" ||
+                        (o.payment?.method === "cod" && o.status === "delivered")
+                    );
+                }
+
+                if (paymentFilter === "failed") {
+                    return o.payment?.status === "failed";
+                }
+
+                return true;
+            });
+        }
+
+        // 📅 Date range filter
         data = filterByDateRange(data);
 
+        // ✅ ONE SINGLE STATE UPDATE
         setFiltered(data);
         setCurrentPage(1);
-    }, [query, statusFilter, orders, fromDate, toDate]);
+
+    }, [query, statusFilter, paymentFilter, orders, fromDate, toDate]);
+
 
     const statusColors = {
         pending: "bg-yellow-200 text-yellow-800",
@@ -188,21 +195,38 @@ const AdminOrders = () => {
 
     const updateStatus = async (orderId, newStatus) => {
         if (!newStatus) return;
+
+        // 🔥 OPTIMISTIC UI UPDATE
+        setOrders((prev) =>
+            prev.map((o) =>
+                o._id === orderId ? { ...o, status: newStatus } : o
+            )
+        );
+
+        setFiltered((prev) =>
+            prev.map((o) =>
+                o._id === orderId ? { ...o, status: newStatus } : o
+            )
+        );
+
         setUpdatingMap((p) => ({ ...p, [orderId]: true }));
+
         try {
             await axios.put(
                 `${serverUrl}/orders/admin/${orderId}/status`,
                 { status: newStatus },
                 { withCredentials: true }
             );
-            // refresh orders after update
-            await fetchOrders();
         } catch (err) {
             console.error("updateStatus error:", err);
+
+            // ❌ rollback if backend fails
+            await fetchOrders();
         } finally {
             setUpdatingMap((p) => ({ ...p, [orderId]: false }));
         }
     };
+
 
     // pagination slice
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -313,6 +337,12 @@ const AdminOrders = () => {
                     placeholder="All Status"
                 />
 
+                <CustomDropdown
+                    value={paymentFilter}
+                    onChange={setPaymentFilter}
+                    options={paymentOptions}
+                    placeholder="All Payments"
+                />
 
             </div>
 
@@ -333,7 +363,12 @@ const AdminOrders = () => {
                                 return (
                                     <div
                                         key={order._id}
-                                        className="bg-white p-6 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-gray-200 flex flex-col md:flex-row md:items-start gap-4"
+                                        className={`p-6 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] border flex flex-col md:flex-row md:items-start gap-4
+    ${order.payment?.method !== "cod" && order.payment?.status === "pending"
+                                                ? "bg-orange-50 border-orange-300"
+                                                : "bg-white border-gray-200"
+                                            }
+  `}
                                     >
                                         {/* Left: thumbnails */}
                                         <div className="shrink-0">
@@ -360,6 +395,21 @@ const AdminOrders = () => {
 
                                                         {/* 💳 Payment Method */}
                                                         <PaymentBadge method={order.payment?.method} />
+
+                                                        {order.payment?.method !== "cod" && order.payment?.status === "pending" && (
+                                                            <span className="px-3 py-1 rounded-full text-xs font-semibold
+                   bg-orange-100 text-orange-700 border border-orange-300">
+                                                                Pending Payment
+                                                            </span>
+                                                        )}
+
+                                                        {order.payment?.status === "paid" && (
+                                                            <span className="px-3 py-1 rounded-full text-xs font-semibold
+                   bg-green-100 text-green-700 border border-green-300">
+                                                                Paid
+                                                            </span>
+                                                        )}
+
                                                         {/* 🆕 Card badge */}
                                                         <span
                                                             className={`px-3 py-1 rounded-full text-xs font-medium
@@ -406,7 +456,9 @@ const AdminOrders = () => {
                                                 <p>
                                                     <b>Delivery:</b>{" "}
                                                     {order.shipping?.deliveryDate ? formatDate(order.shipping.deliveryDate) : "-"} •{" "}
-                                                    {order.shipping?.deliverySlot || "-"}
+                                                    {order.shipping?.deliverySlot
+                                                        ? `${order.shipping.deliverySlot.title} (${order.shipping.deliverySlot.time})`
+                                                        : "-"}
                                                 </p>
                                             </div>
 
@@ -431,7 +483,7 @@ const AdminOrders = () => {
                                             {/* Status update controls kept here (outside modal click zone) */}
                                             <div className="flex gap-2 items-center">
                                                 <select
-                                                    className="border px-3 py-2 rounded-lg cursor-pointer outline-0"
+                                                    className="border border-gray-200 px-3 py-2 rounded-lg cursor-pointer outline-0"
                                                     value={statusDraft[order._id] || order.status}
                                                     onChange={(e) => {
                                                         setStatusDraft((prev) => ({
@@ -519,6 +571,9 @@ const AdminOrders = () => {
                         <div className="mb-4">
                             <h3 className="text-xl font-semibold mb-2">Customer & Shipping Details</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-gray-700">
+
+                                <p><b>Sender Name:</b>{" "}{selectedOrder.sender?.name || "-"}</p>
+                                <p><b>Sender Phone:</b>{" "}{selectedOrder.sender?.phone || "-"}</p>
                                 <p><b>Receiver Name:</b> {selectedOrder.shipping?.receiverName || "-"}</p>
                                 <p><b>Receiver Phone:</b> {selectedOrder.shipping?.receiverPhone || "-"}</p>
 
@@ -532,7 +587,12 @@ const AdminOrders = () => {
                                 <p><b>Flat:</b> {selectedOrder.shipping?.flat || "-"}</p>
 
                                 <p><b>Delivery Date:</b> {selectedOrder.shipping?.deliveryDate ? formatDate(selectedOrder.shipping.deliveryDate) : "-"}</p>
-                                <p><b>Delivery Slot:</b> {selectedOrder.shipping?.deliverySlot || "-"}</p>
+                                <p>
+                                    <b>Delivery Slot:</b>{" "}
+                                    {selectedOrder.shipping?.deliverySlot
+                                        ? `${selectedOrder.shipping.deliverySlot.title} (${selectedOrder.shipping.deliverySlot.time})`
+                                        : "-"}
+                                </p>
 
                                 <p><b>Delivery Charge:</b> AED {Number(selectedOrder.totals?.deliveryCharge || selectedOrder.shipping?.deliveryCharge || 0).toFixed(2)}</p>
                                 <p><b>Order Created:</b> {formatDate(selectedOrder.createdAt)}</p>

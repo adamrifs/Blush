@@ -235,7 +235,7 @@ const ListProduct = ({ setActivePage }) => {
             setLoading(false);
         }
     };
-    console.log('products:', products)
+    // console.log('products:', products)
 
     // ================== FILTER + SORT LOGIC ===================
     const filteredProducts = products

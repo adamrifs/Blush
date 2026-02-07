@@ -54,7 +54,7 @@ exports.initPaymobPayment = async (req, res) => {
 // ---------------- STRIPE ----------------
 exports.createStripeSession = async (req, res) => {
   try {
-    const { cart, totals, shipping, userId, cardMessage } = req.body;
+    const { cart, totals, shipping, userId, cardMessage, senderName, senderPhone } = req.body;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -79,6 +79,11 @@ exports.createStripeSession = async (req, res) => {
 
       metadata: {
         userId,
+
+        // ✅ ADD SENDER HERE
+        senderName,
+        senderPhone,
+
         shipping: JSON.stringify(shipping),
         totals: JSON.stringify(totals),
         cardMessage: JSON.stringify(cardMessage),

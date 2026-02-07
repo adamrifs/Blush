@@ -97,6 +97,13 @@ const MyOrders = () => {
         return "";
     };
 
+    const formatDeliverySlot = (slot) => {
+        if (!slot) return "-";
+        if (typeof slot === "string") return slot; // old orders
+        return `${slot.title} (${slot.time})`;     // new orders
+    };
+
+
     const statusOptions = [
         { label: "All Status", value: "all" },
         { label: "Pending", value: "pending" },
@@ -376,7 +383,7 @@ Phone: ${order.shipping.receiverPhone}`,
                                         <span className="font-medium">Delivery:</span>{" "}
                                         {new Date(order.shipping.deliveryDate)
                                             .toLocaleDateString("en-GB")
-                                            .replace(/\//g, "-")} • {order.shipping.deliverySlot}
+                                            .replace(/\//g, "-")} • {formatDeliverySlot(order.shipping.deliverySlot)}
                                     </p>
                                     <p className="text-sm text-gray-500">
                                         {order.shipping.area}, {order.shipping.emirate}

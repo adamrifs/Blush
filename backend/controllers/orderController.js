@@ -12,32 +12,59 @@ const OrderNotification = require('../models/OrderNotification')
 exports.createOrder = async (req, res) => {
   try {
     if (req.body.payment?.method !== "cod") {
+      return res.status(400).json({ message: "Only COD allowed" });
+    }
+
+    const {
+      senderName,
+      senderPhone,
+      sender,
+      shipping,
+      ...restBody
+    } = req.body;
+
+    const finalSenderName =
+      senderName || sender?.name || shipping?.receiverName;
+
+    const finalSenderPhone =
+      senderPhone || sender?.phone || shipping?.receiverPhone;
+
+    if (!finalSenderName || !finalSenderPhone) {
       return res.status(400).json({
-        message: "Only COD orders are allowed here",
+        message: "Sender name & phone are required",
       });
     }
 
     const order = new Order({
-      ...req.body,
+      ...restBody,
+      sender: {
+        name: finalSenderName,
+        phone: finalSenderPhone,
+      },
+      shipping,
       payment: {
         ...req.body.payment,
         status: "pending",
         transactionId: null,
         orderId: null,
       },
+      status: "pending",
     });
-    console.log("ORDER FOR EMAIL:", JSON.stringify(order, null, 2));
 
     await order.save();
 
+    // ✅ DATABASE NOTIFICATION
     await OrderNotification.create({
       title: "New COD Order 💐",
-      message: `COD Order #${order._id} placed`
+      message: `COD Order #${order._id} placed`,
+      orderId: order._id,
     });
 
-    // 3️⃣ REALTIME NOTIFICATION (SAFE)
+    // ✅ REALTIME SOCKET NOTIFICATION
     if (req.app.locals.io) {
       await notifyAdmins(order, req.app);
+    } else {
+      console.warn("⚠️ Socket.io not initialized");
     }
 
     res.status(201).json({
@@ -46,11 +73,13 @@ exports.createOrder = async (req, res) => {
       order,
     });
 
-  } catch (error) {
-    console.error("Create COD Order Error:", error);
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    console.error("Create COD Order Error:", err);
+    res.status(500).json({ message: err.message });
   }
 };
+
+
 
 // GET ALL ORDERS (ADMIN)
 
@@ -92,9 +121,13 @@ exports.getOrdersByCustomer = async (req, res) => {
   try {
     const customerId = req.params.id;
 
-    const orders = await Order.find({ userId: customerId })
+    const orders = await Order.find({
+      userId: customerId,
+      "payment.status": "paid",
+    })
       .sort({ createdAt: -1 })
       .populate("items.productId", "name price image description category");
+
 
     res.status(200).json({ success: true, orders });
   } catch (err) {
@@ -109,7 +142,7 @@ exports.getUserOrders = async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    const orders = await Order.find({ userId })
+    const orders = await Order.find({ userId }) // 👈 NO FILTER
       .sort({ createdAt: -1 })
       .populate("items.productId", "name price image description category");
 
@@ -119,6 +152,7 @@ exports.getUserOrders = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // ===============================
 // UPDATE ORDER STATUS (ADMIN)

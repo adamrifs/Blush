@@ -298,11 +298,6 @@ const ShippingStep = ({
                 return showToast("Invalid delivery slot", "error");
             }
 
-            const deliverySlotString =
-                selectedSlot.selectedTime
-                    ? `${selectedSlot.title} (${selectedSlot.selectedTime})`
-                    : selectedSlot.title;
-
             const payload = {
                 userId,
                 receiverName,
@@ -314,7 +309,10 @@ const ShippingStep = ({
                 building,
                 flat,
                 deliveryDate: new Date(date).toISOString(),
-                deliverySlot: deliverySlotString,
+                deliverySlot: {
+                    title: selectedSlot.title,
+                    time: selectedSlot.selectedTime
+                },
                 deliveryCharge: selectedSlot.price || 0,
             };
 

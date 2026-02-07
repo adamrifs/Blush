@@ -6,6 +6,11 @@ const orderSchema = new mongoose.Schema({
         ref: "user",
         required: true,
     },
+    
+    sender: {
+        name: { type: String, required: true },
+        phone: { type: String, required: true }
+    },
 
     // 🛒 CART ITEMS (same as your cartSchema)
     items: [
@@ -29,7 +34,10 @@ const orderSchema = new mongoose.Schema({
         flat: { type: String, required: true },
 
         deliveryDate: { type: String, required: true },
-        deliverySlot: { type: String, required: true },
+        deliverySlot: {
+            title: { type: String, required: true },
+            time: { type: String, required: true }
+        },
         deliveryCharge: { type: Number, default: 0 }
     },
 

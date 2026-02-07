@@ -303,16 +303,16 @@ const Checkout = () => {
 
                         <p
                             className={`text-sm md:text-xl cursor-pointer 
-                        ${currentStep === "payment" ? "text-black font-semibold" : "text-gray-400"}`}
+    ${currentStep === "payment" ? "text-black font-semibold" : "text-gray-400"}`}
                             onClick={() => {
-                                if (validateShipping()) {
+                                if (validateDetails() && validateShipping()) {
                                     setCurrentStep("payment");
                                 }
                             }}
-
                         >
                             Payment
                         </p>
+
                     </div>
 
                     <div className="progressbar w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -414,12 +414,13 @@ const Checkout = () => {
                                 setCurrentStep={setCurrentStep}
                             />
 
-
-
                         )}
 
                         {currentStep === "payment" &&
                             <PaymentStep
+                                senderName={name}
+                                senderPhone={phoneNumber}
+
                                 deliverySlot={deliverySlot}
                                 deliveryDate={deliveryDate}
                                 deliveryEmirate={deliveryEmirate}

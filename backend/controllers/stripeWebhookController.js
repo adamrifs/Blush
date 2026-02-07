@@ -49,8 +49,16 @@ exports.handleStripeWebhook = async (req, res) => {
     // 🧾 CREATE ORDER (ONLY HERE)
     const order = new Order({
       userId: session.metadata.userId,
+
+      // ✅ ADD SENDER
+      sender: {
+        name: session.metadata.senderName,
+        phone: session.metadata.senderPhone,
+      },
+
       items,
       shipping: JSON.parse(session.metadata.shipping),
+
       payment: {
         method: "card",
         status: "paid",
@@ -59,6 +67,7 @@ exports.handleStripeWebhook = async (req, res) => {
         amount: session.amount_total / 100,
         vat: JSON.parse(session.metadata.totals).vatAmount,
       },
+
       totals: JSON.parse(session.metadata.totals),
       cardMessage: JSON.parse(session.metadata.cardMessage),
     });

@@ -103,7 +103,9 @@ const OrderSuccess = () => {
 
                             <p className="text-gray-500">
                                 <span className="font-medium text-black">Time Slot: </span>
-                                {order?.shipping?.deliverySlot || "10 AM – 01 PM"}
+                                {order?.shipping?.deliverySlot
+                                    ? `${order.shipping.deliverySlot.title} (${order.shipping.deliverySlot.time})`
+                                    : "10 AM – 01 PM"}
                             </p>
 
                             <p className="text-gray-500">

@@ -18,7 +18,7 @@ export const ProductProvider = ({ children }) => {
             const response = await axios.get(`${serverUrl}/product/getProduct`, {
                 withCredentials: true,
             });
-            console.log(response.data);
+            // console.log(response.data);
             setProducts(response.data.products);
         } catch (error) {
             console.log(error);

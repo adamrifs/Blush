@@ -64,10 +64,21 @@ const TrackOrder = () => {
         const slot = order?.shipping?.deliverySlot;
         if (!slot) return null;
 
-        // Example: "10:00 AM – 01:00 PM"
-        const [start, end] = slot.split("–").map((s) => s.trim());
-        return end || slot;
+        // OLD orders (string)
+        if (typeof slot === "string") {
+            const parts = slot.split("–").map((s) => s.trim());
+            return parts[1] || slot;
+        }
+
+        // NEW orders (object)
+        if (slot.time) {
+            const parts = slot.time.split("–").map((s) => s.trim());
+            return parts[1] || slot.time;
+        }
+
+        return null;
     };
+
 
     const eta = calculateETA();
 
@@ -273,7 +284,9 @@ const TrackOrder = () => {
 
                             {order.shipping.deliverySlot && (
                                 <p className="text-gray-600 mt-1 text-sm">
-                                    <span className="font-medium">Delivered During:</span> {order.shipping.deliverySlot}
+                                    <span className="font-medium">Delivered During:</span> {typeof order.shipping.deliverySlot === "string"
+                                        ? order.shipping.deliverySlot
+                                        : `${order.shipping.deliverySlot.title} (${order.shipping.deliverySlot.time})`}
                                 </p>
                             )}
                         </motion.div>
@@ -304,7 +317,9 @@ const TrackOrder = () => {
 
                         <p className="text-gray-600 mb-2">
                             <span className="font-semibold">Delivery Slot:</span>{" "}
-                            {order.shipping.deliverySlot}
+                            {typeof order.shipping.deliverySlot === "string"
+                                ? order.shipping.deliverySlot
+                                : `${order.shipping.deliverySlot.title} (${order.shipping.deliverySlot.time})`}
                         </p>
 
                         <p className="text-gray-600">

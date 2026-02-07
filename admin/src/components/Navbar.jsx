@@ -58,7 +58,7 @@ const Navbar = ({ setIsSideBarOpen }) => {
       .then(data => {
         if (data?.admin?._id) {
           setAdminData(data.admin);
-          console.log("✅ Admin loaded:", data.admin._id);
+          // console.log("✅ Admin loaded:", data.admin._id);
         }
       })
       .catch(err => console.error(err));

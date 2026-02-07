@@ -14,6 +14,8 @@ import api from "../../utils/axiosInstance.js";
 import { useLoader } from "../../context/LoaderContext.jsx";
 
 const PaymentStep = ({
+    senderName,
+    senderPhone,
     deliverySlot,
     deliveryDate,
     deliveryEmirate,
@@ -26,9 +28,11 @@ const PaymentStep = ({
     cardMessageData
 }) => {
     const { cart, setCart, sessionId, fetchCartCount } = useContext(ProductContext);
-    const { setLoading ,loading} = useLoader()
+    const { setLoading, loading } = useLoader()
     const { showToast } = useToast()
     const navigate = useNavigate()
+
+    // console.log("SENDER CHECK:", senderName, senderPhone);
 
     if (!cart || cart.length === 0) {
         return (
@@ -114,6 +118,7 @@ const PaymentStep = ({
         }
 
         try {
+            window.scrollTo(0, 0)
             // 🌸 START GLOBAL LOADER
             setLoading(true, method === "cod"
                 ? "Placing your order…"
@@ -125,6 +130,10 @@ const PaymentStep = ({
 
                 const payload = {
                     userId: user._id,
+
+                    // ✅ ADD SENDER DETAILS
+                    senderName: senderName,
+                    senderPhone: senderPhone,
 
                     items: cart.map((item) => ({
                         productId: item.productId._id,
@@ -142,7 +151,10 @@ const PaymentStep = ({
                         building,
                         flat,
                         deliveryDate,
-                        deliverySlot: deliverySlot?.title,
+                        deliverySlot: {
+                            title: deliverySlot?.title,
+                            time: deliverySlot?.selectedTime
+                        },
                         deliveryCharge: Number(deliveryExclusiveDisplay),
                     },
 
@@ -184,31 +196,56 @@ const PaymentStep = ({
             // ===================== TABBY =====================
             if (method === "tabby") {
                 const res = await api.post(`${serverUrl}/payment/tabby`, {
+                    userId: user._id,
+                    senderName,
+                    senderPhone,
                     cart,
-                    totals: { grandTotal: Number(grandTotalDisplay) },
+
+                    totals: {
+                        bagTotal: Number(bagTotalInclusiveDisplay),
+                        deliveryCharge: Number(deliveryExclusiveDisplay),
+                        vatAmount: Number(vatDisplay),
+                        grandTotal: Number(grandTotalDisplay),
+                    },
+
+                    payment: {
+                        amount: Number(grandTotalDisplay),
+                        vat: Number(vatDisplay),
+                    },
+
                     shipping: {
                         receiverName,
                         receiverPhone,
+                        country: "United Arab Emirates",
                         emirate: deliveryEmirate,
                         area,
                         street,
+                        building: building || "N/A",
+                        flat: flat || "N/A",
+                        deliveryDate,
+                        deliverySlot: {
+                            title: deliverySlot?.title,
+                            time: deliverySlot?.selectedTime,
+                        },
+                        deliveryCharge: Number(deliveryExclusiveDisplay),
                     },
-                    user: {
-                        email: user.email,
-                        phone: user.phone,
-                        name: user.name || receiverName,
-                    },
+
+                    cardMessage: cardMessageData,
+                    sessionId,
                 });
 
                 window.location.href = res.data.url;
-                return;
             }
+
+
 
             // ===================== STRIPE =====================
             if (method === "card" || method === "applepay") {
                 const res = await api.post(
                     `${serverUrl}/payment/create-stripe-session`,
                     {
+                        senderName,
+                        senderPhone,
                         cart,
                         totals: {
                             bagTotal: Number(bagTotalInclusiveDisplay),
@@ -225,7 +262,10 @@ const PaymentStep = ({
                             building,
                             flat,
                             deliveryDate,
-                            deliverySlot: deliverySlot?.title,
+                            deliverySlot: {
+                                title: deliverySlot?.title,
+                                time: deliverySlot?.selectedTime
+                            },
                         },
                         cardMessage: cardMessageData,
                         userId: user._id,
@@ -464,43 +504,43 @@ const PaymentStep = ({
 
                     {/* ------- Pay with Apple Pay ------- */}
                     {/* <div
-                        className="flex items-center justify-between py-5 border-b border-gray-200"
-                        onClick={() => setMethod("applepay")}
-                    >
-                        <div className="flex items-center gap-4 cursor-pointer">
-                            <div className={`${radioBase} ${method === "applepay" && radioSelected}`}>
-                                {method === "applepay" && (
-                                    <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
-                                )}
+                            className="flex items-center justify-between py-5 border-b border-gray-200"
+                            onClick={() => setMethod("applepay")}
+                        >
+                            <div className="flex items-center gap-4 cursor-pointer">
+                                <div className={`${radioBase} ${method === "applepay" && radioSelected}`}>
+                                    {method === "applepay" && (
+                                        <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
+                                    )}
+                                </div>
+                                <p className="text-lg">Apple Pay</p>
                             </div>
-                            <p className="text-lg">Apple Pay</p>
-                        </div>
 
-                        <img src={applePay} className="w-30 h-20 object-contain" />
-                    </div> */}
+                            <img src={applePay} className="w-30 h-20 object-contain" />
+                        </div> */}
 
 
                     {/* ------- Pay with Tamara ------- */}
                     {/* <div
-                        className="flex items-center justify-between py-5 border-b border-gray-200"
-                        onClick={() => setMethod("tamara")}
-                    >
-                        <div className="flex items-center gap-4 cursor-pointer">
-                            <div className={`${radioBase} ${method === "tamara" && radioSelected}`}>
-                                {method === "tamara" && (
-                                    <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
-                                )}
+                            className="flex items-center justify-between py-5 border-b border-gray-200"
+                            onClick={() => setMethod("tamara")}
+                        >
+                            <div className="flex items-center gap-4 cursor-pointer">
+                                <div className={`${radioBase} ${method === "tamara" && radioSelected}`}>
+                                    {method === "tamara" && (
+                                        <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
+                                    )}
+                                </div>
+                                <p className="text-lg">Pay with Tamara</p>
                             </div>
-                            <p className="text-lg">Pay with Tamara</p>
-                        </div>
 
-                        <div className="div w-30 h-20">
-                            <img
-                                src={tamara}
-                                className="h-full w-full object-contain opacity-80"
-                            />
-                        </div>
-                    </div> */}
+                            <div className="div w-30 h-20">
+                                <img
+                                    src={tamara}
+                                    className="h-full w-full object-contain opacity-80"
+                                />
+                            </div>
+                        </div> */}
 
                     {/* ------- Pay with Tabby ------- */}
                     <div
@@ -563,12 +603,12 @@ const PaymentStep = ({
                         disabled={loading}
                         onClick={handlePayment}
                         className={`mt-8 w-full py-4 rounded-full text-white text-lg font-medium
-    bg-gradient-to-r from-[#b89bff] to-[#d6b8ff]
-    border border-[#bca8ff]
-    shadow-[0_2px_8px_rgba(0,0,0,0.1)]
-    transition-all duration-300
-    ${loading ? "opacity-60 cursor-not-allowed" : "hover:from-[#a27aff] hover:to-[#cda5ff]"}
-  `}
+        bg-gradient-to-r from-[#b89bff] to-[#d6b8ff]
+        border border-[#bca8ff]
+        shadow-[0_2px_8px_rgba(0,0,0,0.1)]
+        transition-all duration-300
+        ${loading ? "opacity-60 cursor-not-allowed" : "hover:from-[#a27aff] hover:to-[#cda5ff]"}
+    `}
                     >
                         {method === "cod"
                             ? "Place Order (COD)"

@@ -73,8 +73,12 @@ const Overview = () => {
   const today = new Date().toISOString().split("T")[0];
 
   const todaysRevenue = orders
-    .filter(o => o.createdAt?.split("T")[0] === today)
+    .filter(o =>
+      o.createdAt?.split("T")[0] === today &&
+      o.payment?.status === "paid"
+    )
     .reduce((sum, o) => sum + (o.payment?.amount || 0), 0);
+
 
 
   if (loading) {
@@ -103,11 +107,64 @@ const Overview = () => {
     return `${Math.floor(seconds / 86400)} days ago`;
   };
 
+  const pendingPaymentOrders = orders.filter(
+    o => o.payment?.method !== "cod" && o.payment?.status === "pending"
+  ).length;
+
+  // const processingOrders = orders.filter(
+  //   o => o.payment?.status === "paid" || o.payment?.method === "cod"
+  // ).length;
+
+  const isPaidOrder = (order) =>
+    order.payment?.status === "paid" ||
+    (order.payment?.method === "cod" && order.status === "delivered");
+
+  // Weekly revenue
+  const weeklyRevenue = orders
+    .filter(isPaidOrder)
+    .filter((o) => {
+      const orderDate = new Date(o.createdAt);
+      const now = new Date();
+      const diffDays = (now - orderDate) / (1000 * 60 * 60 * 24);
+      return diffDays <= 7;
+    })
+    .reduce(
+      (sum, o) => sum + (o.payment?.amount || o.totals?.grandTotal || 0),
+      0
+    );
+
+  // monthly revenue
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const monthlyRevenue = orders
+    .filter(isPaidOrder)
+    .filter((o) => {
+      const d = new Date(o.createdAt);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .reduce(
+      (sum, o) => sum + (o.payment?.amount || o.totals?.grandTotal || 0),
+      0
+    );
+
+
   return (
     <div className="p-6 overflow-y-auto font-Poppins">
 
       {/* Header */}
-      <p className="text-center text-gray-500 mb-10">Blush Admin Panel Overview</p>
+      <div className="flex items-center justify-between mb-10">
+        <p className="text-center text-gray-500 mb-10">Blush Admin Panel Overview</p>
+
+        <button
+          onClick={fetchAllData}
+          className="px-4 py-2 rounded-lg bg-[#2F3746] text-white hover:bg-black transition cursor-pointer"
+        >
+          Refresh
+        </button>
+      </div>
+
 
       {/* KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
@@ -115,9 +172,23 @@ const Overview = () => {
         <Card label="Total Orders" value={totalOrders} />
         <Card label="Total Customers" value={totalCustomers} />
         <Card label="Total Products" value={totalProducts} />
+        <Card label="Pending Payment" value={pendingPaymentOrders} valueColor="text-orange-600" />
+        {/* <Card label="Processing Orders" value={processingOrders} valueColor="text-blue-600"/> */}
         <Card label="Pending Orders" value={pendingOrders} />
         <Card label="Low Stock Products" value={lowStock} valueColor="text-red-500" />
         <Card label="Today's Revenue" value={`AED ${todaysRevenue}`} />
+        <Card
+          label="Weekly Revenue"
+          value={`AED ${weeklyRevenue.toFixed(2)}`}
+          valueColor="text-indigo-600"
+        />
+
+        <Card
+          label="Monthly Revenue"
+          value={`AED ${monthlyRevenue.toFixed(2)}`}
+          valueColor="text-emerald-600"
+        />
+
 
       </div>
 
@@ -166,7 +237,10 @@ const Overview = () => {
                       : "text-green-600"
                       }`}
                   >
-                    {order.status}
+                    {order.payment?.method !== "cod" && order.payment?.status === "pending"
+                      ? <span className="text-orange-600 font-semibold">Pending Payment</span>
+                      : <span className="text-green-600">{order.status}</span>
+                    }
                   </td>
 
                   <td className="py-2 text-sm text-gray-500">

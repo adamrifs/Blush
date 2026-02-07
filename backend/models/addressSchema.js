@@ -14,7 +14,10 @@ const addressSchema = new mongoose.Schema({
     flat: { type: String, required: true },
 
     deliveryDate: { type: String, required: true },
-    deliverySlot: { type: String, required: true },
+    deliverySlot: {
+        title: { type: String, required: true },
+        time: { type: String, required: true }
+    },
     deliveryCharge: { type: Number, default: 0 },
 
 }, { timestamps: true });

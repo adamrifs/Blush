@@ -34,7 +34,7 @@ const CustomerList = () => {
         }
     };
 
-console.log("customers",customers)
+// console.log("customers",customers)
     // Export to CSV
     const exportCSV = () => {
         const rows = [
