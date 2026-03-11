@@ -93,6 +93,7 @@ exports.orderTable = (order) => `
 <table>
   <thead>
     <tr>
+      <th>Image</th>
       <th>Product</th>
       <th>Qty</th>
     </tr>
@@ -100,7 +101,13 @@ exports.orderTable = (order) => `
   <tbody>
     ${order.items.map(item => `
       <tr>
-        <td>${item.productId}</td>
+        <td>
+          ${item.productId?.image?.[0]
+    ? `<img src="${item.productId.image[0]}" width="60" height="60" style="border-radius:6px; object-fit:cover;" />`
+    : "-"
+  }
+        </td>
+        <td>${item.productId?.name || "Product"}</td>
         <td>${item.quantity}</td>
       </tr>
     `).join("")}
@@ -127,7 +134,6 @@ exports.orderTable = (order) => `
 </table>
 `;
 
-
 exports.orderPlacedContent = (order) => `
 <p>You’ve received a new order.</p>
 
@@ -142,7 +148,11 @@ ${exports.orderTable(order)}
 <p style="margin-top:14px">
   <strong>Delivery Date:</strong>
   ${new Date(order.shipping.deliveryDate).toDateString()}<br/>
-  <strong>Delivery Slot:</strong> ${order.shipping.deliverySlot}<br/>
+
+  <strong>Delivery Slot:</strong>
+  ${order.shipping.deliverySlot?.title || "N/A"}
+  ${order.shipping.deliverySlot?.time ? ` (${order.shipping.deliverySlot.time})` : ""}<br/>
+
   <strong>Delivery Charge:</strong>
   AED ${formatPrice(order.shipping.deliveryCharge)}
 </p>
@@ -157,13 +167,25 @@ ${exports.orderTable(order)}
   </div>
 
   <div class="box">
+    <div class="label">Sender Details</div>
+    ${order.sender?.name || "N/A"}<br/>
+    ${order.sender?.phone || "N/A"}
+  </div>
+</div>
+
+<div class="row">
+  <div class="box">
     <div class="label">Order Info</div>
     Status: ${order.status}<br/>
-    COD Amount: AED ${formatPrice(order.payment.amount)}<br/>
+    Amount: AED ${formatPrice(order.payment.amount)}<br/>
     VAT: AED ${formatPrice(order.payment.vat)}
   </div>
+
+<div class="box">
+  <div class="label">Card Message</div>
+  ${(order.cardMessage?.messageText || "No card message").replace(/\n/g, "<br/>")}
+</div>
 </div>
 
 <p style="margin-top:20px">Congratulations on the sale 🎉</p>
 `;
-

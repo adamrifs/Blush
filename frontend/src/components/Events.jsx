@@ -4,12 +4,17 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { ProductContext } from "../context/ProductContext";
 import Skeleton from "react-loading-skeleton";
+import { useMemo } from "react";
 
 const Events = () => {
   const nav = useNavigate();
   const { products, loading } = useContext(ProductContext);
 
-  const maximumProducts = products.slice(5, 9);
+  const maximumProducts = useMemo(() => {
+    return [...products]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 4);
+  }, [products]);
 
   const gotoProductListing = (product) => {
     nav("/product-listing", { state: { selectedCategory: product } });

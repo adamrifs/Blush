@@ -4,11 +4,18 @@ import { HiOutlineChevronRight } from "react-icons/hi2";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import Skeleton from "react-loading-skeleton";
+import { useMemo } from 'react';
 
 const Featured = () => {
     const { products, loading } = useContext(ProductContext)
-    const maximumProducts = products.filter((item) => item.isFeatured).sort(() => 0.5 - Math.random()).slice(0, 4)
     const nav = useNavigate()
+    
+    const maximumProducts = useMemo(() => {
+        return products
+            .filter(item => item.isFeatured && item.stock > 0)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 4)
+    }, [products])
 
     const gotoProductListing = (product) => {
         nav("/product-listing", { state: { selectedCategory: product } });

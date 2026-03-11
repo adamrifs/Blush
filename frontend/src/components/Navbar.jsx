@@ -31,16 +31,37 @@ const Navbar = () => {
   const searchRef = useRef(null);
   const nav = useNavigate();
 
-  const filteredProducts = products.filter(
-    (item) =>
-      item.name.toLowerCase().includes(query.toLowerCase()) ||
-      item.category?.toLowerCase().includes(query.toLowerCase()) ||
-      item.occasions?.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredProducts = query.trim()
+    ? products
+      .map((item) => {
+        const q = query.toLowerCase().trim();
+
+        const searchableText = `
+          ${item.name || ""}
+          ${item.slug || ""}
+          ${item.sku || ""}
+          ${item.category || ""}
+          ${item.occasions || ""}
+          ${item.description || ""}
+          ${item.type || ""}
+        `.toLowerCase();
+
+        let score = 0;
+
+        if (item.name?.toLowerCase() === q) score += 100;
+        if (item.name?.toLowerCase().startsWith(q)) score += 80;
+        if (searchableText.includes(q)) score += 50;
+
+        return { ...item, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+    : products;
 
   const handleUserAccount = () => {
     setUserAccount(!userAccount)
   }
+  console.log('filtered products>', filteredProducts)
 
   const handleSelectProduct = (product) => {
     setShowSearch(false);
@@ -150,7 +171,8 @@ const Navbar = () => {
             window.scrollTo(0, 0);
           }} />
       </div>
-      {/* 🔍 Search bar */}
+
+      {/* ______________________________🔍 Search bar____________________________________ */}
       <div
         ref={searchRef}
         className="relative flex-1 max-w-[220px] sm:max-w-[250px] md:max-w-[450px] mx-3 sm:mx-6"

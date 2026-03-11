@@ -233,7 +233,7 @@ const AdminOrders = () => {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentOrders = filtered.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-    // console.log(currentOrders)
+    console.log(currentOrders)
 
     const statusOptions = [
         { label: "All Status", value: "all" },
@@ -268,22 +268,22 @@ const AdminOrders = () => {
 
             {/* Analytics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 font-Poppins">
-                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-300 text-center">
+                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 text-center">
                     <h3 className="text-gray-500 text-sm">Total Orders</h3>
                     <p className="text-3xl font-bold mt-2">{stats.totalOrders}</p>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-300 text-center">
+                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 text-center">
                     <h3 className="text-gray-500 text-sm">Pending Orders</h3>
                     <p className="text-3xl text-yellow-600 font-bold mt-2">{stats.pending}</p>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-300 text-center">
+                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 text-center">
                     <h3 className="text-gray-500 text-sm">Delivered</h3>
                     <p className="text-3xl text-green-600 font-bold mt-2">{stats.delivered}</p>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-300 text-center">
+                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 text-center">
                     <h3 className="text-gray-500 text-sm">Total Revenue</h3>
                     <p className="text-3xl text-[#2F3746] font-bold mt-2">
                         AED {Number(stats.revenue || 0).toFixed(2)}
@@ -292,7 +292,7 @@ const AdminOrders = () => {
             </div>
 
             {/* Date Range Filter */}
-            <div className="bg-white p-4 rounded-xl shadow-md border border-gray-300 mb-6 flex flex-col md:flex-row gap-4 md:items-end">
+            <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 md:items-end">
                 <div className="flex flex-col w-full md:w-1/3">
                     <label className="text-sm text-gray-600 mb-1">From Date</label>
                     <input
@@ -390,7 +390,7 @@ const AdminOrders = () => {
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h2 className="font-semibold text-lg flex items-center gap-2">
+                                                    <h2 className="font-semibold text-lg flex items-center gap-2 text-gray-500">
                                                         Order #{order._id}
 
                                                         {/* 💳 Payment Method */}
@@ -428,6 +428,16 @@ const AdminOrders = () => {
                                                                     : "No Card"}
                                                         </span>
                                                     </h2>
+
+                                                    {order.items.map((item, index) => (
+                                                        <h2
+                                                            key={index}
+                                                            className="text-[28px] font-semibold tracking-[-0.3px] text-[#1F2937] leading-tight mt-1"
+                                                        >
+                                                            {item.productId?.name}
+                                                        </h2>
+                                                    ))}
+
 
                                                     <p className="text-sm text-gray-500">
                                                         Placed on: {formatDate(order.createdAt)}

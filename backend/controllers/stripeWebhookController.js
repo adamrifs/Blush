@@ -2,11 +2,92 @@ const Stripe = require("stripe");
 const mongoose = require("mongoose");
 const Order = require("../models/orderSchema");
 const { notifyAdmins } = require("../services/orderNotifications");
-const OrderNotification = require('../models/OrderNotification')
+const OrderNotification = require("../models/OrderNotification");
+const AdminSettings = require("../models/AdminSettings");
+const User = require("../models/userSchema");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+/* ======================================
+   CREATE ORDER FROM STRIPE SESSION
+====================================== */
+async function createOrderFromSession(session, req) {
+
+  // Prevent duplicate orders
+  const existingOrder = await Order.findOne({
+    "payment.orderId": session.id,
+  });
+
+  if (existingOrder) {
+    console.log("⚠️ Order already exists for session:", session.id);
+    return;
+  }
+
+  console.log("🧾 Creating order from session:", session.id);
+
+  const items = JSON.parse(session.metadata.cart).map((item) => ({
+    productId: new mongoose.Types.ObjectId(item.productId),
+    quantity: item.quantity,
+    addons: item.addons || [],
+  }));
+
+  const order = new Order({
+    userId: session.metadata.userId,
+
+    sender: {
+      name: session.metadata.senderName,
+      phone: session.metadata.senderPhone,
+    },
+
+    items,
+    shipping: JSON.parse(session.metadata.shipping),
+
+    payment: {
+      method: "card",
+      status: "paid",
+      transactionId: session.payment_intent,
+      orderId: session.id,
+      amount: session.amount_total / 100,
+      vat: JSON.parse(session.metadata.totals).vatAmount,
+    },
+
+    totals: JSON.parse(session.metadata.totals),
+    cardMessage: JSON.parse(session.metadata.cardMessage),
+  });
+
+  await order.save();
+
+  await order.populate("items.productId");
+
+  const adminSettingsList = await AdminSettings.find({});
+
+  for (const settings of adminSettingsList) {
+    if (settings.emailEnabled && settings.email) {
+      await sendNewOrderEmail(settings.email, order);
+    }
+  }
+
+  const user = await User.findById(order.userId);
+
+  if (user?.email) {
+    await sendOrderConfirmationToCustomer(user.email, order);
+  }
+
+  console.log("🟢 Stripe order created:", order._id);
+
+  await OrderNotification.create({
+    title: "New Order Received",
+    message: `Order #${order._id} has been placed`,
+  });
+
+  await notifyAdmins(order, req.app);
+}
+
+/* ======================================
+   STRIPE WEBHOOK HANDLER
+====================================== */
 exports.handleStripeWebhook = async (req, res) => {
+
   console.log("🔥 STRIPE WEBHOOK HIT");
 
   const sig = req.headers["stripe-signature"];
@@ -14,7 +95,7 @@ exports.handleStripeWebhook = async (req, res) => {
 
   try {
     event = stripe.webhooks.constructEvent(
-      req.body, // RAW BUFFER (important)
+      req.body, // RAW BODY
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
@@ -25,65 +106,48 @@ exports.handleStripeWebhook = async (req, res) => {
 
   console.log("✅ Stripe event verified:", event.type);
 
-  // ✅ PAYMENT SUCCESS
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
+  try {
 
-    // 🛑 PREVENT DUPLICATE ORDERS (Stripe retries webhooks)
-    const existingOrder = await Order.findOne({
-      "payment.orderId": session.id,
-    });
+    /* ===============================
+       CHECKOUT COMPLETED
+    =============================== */
+    if (event.type === "checkout.session.completed") {
 
-    if (existingOrder) {
-      console.log("⚠️ Order already exists for session:", session.id);
-      return res.json({ received: true });
+      const session = event.data.object;
+
+      await createOrderFromSession(session, req);
     }
 
-    // 🔄 BUILD ITEMS
-    const items = JSON.parse(session.metadata.cart).map(item => ({
-      productId: new mongoose.Types.ObjectId(item.productId),
-      quantity: item.quantity,
-      addons: item.addons || [],
-    }));
+    /* ===============================
+       PAYMENT INTENT SUCCEEDED
+    =============================== */
+    if (event.type === "payment_intent.succeeded") {
 
-    // 🧾 CREATE ORDER (ONLY HERE)
-    const order = new Order({
-      userId: session.metadata.userId,
+      const paymentIntent = event.data.object;
 
-      // ✅ ADD SENDER
-      sender: {
-        name: session.metadata.senderName,
-        phone: session.metadata.senderPhone,
-      },
+      console.log("💳 Payment Intent Succeeded:", paymentIntent.id);
 
-      items,
-      shipping: JSON.parse(session.metadata.shipping),
+      // Retrieve checkout session using payment intent
+      const sessions = await stripe.checkout.sessions.list({
+        payment_intent: paymentIntent.id,
+      });
 
-      payment: {
-        method: "card",
-        status: "paid",
-        transactionId: session.payment_intent,
-        orderId: session.id,
-        amount: session.amount_total / 100,
-        vat: JSON.parse(session.metadata.totals).vatAmount,
-      },
+      if (sessions.data.length > 0) {
 
-      totals: JSON.parse(session.metadata.totals),
-      cardMessage: JSON.parse(session.metadata.cardMessage),
-    });
+        const session = sessions.data[0];
 
-    await order.save();
-    console.log("🟢 Stripe order created:", order._id);
+        await createOrderFromSession(session, req);
+      } else {
+        console.log("⚠️ No checkout session found for payment intent:", paymentIntent.id);
+      }
+    }
 
-    await OrderNotification.create({
-      title: 'New Order Received',
-      message: `Order #${order._id} has been placed`
-    });
+  } catch (error) {
 
-    // 🔔 NOTIFY ADMINS (socket + email + push)
-    await notifyAdmins(order, req.app);
+    console.error("❌ Webhook processing error:", error);
+
   }
 
-  // ✅ Stripe requires 200 OK
+  // Stripe requires 200 response
   res.json({ received: true });
 };

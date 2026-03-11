@@ -203,9 +203,15 @@ const editProduct = async (req, res) => {
         }
 
         const fields = [
-            "name", "type", "sku", "regularPrice", "price",
-            "description", "category", "occasions",
-            "isFeatured", "availableIn"
+            "name",
+            "type",
+            "sku",
+            "regularPrice",
+            "price",
+            "description",
+            "category",
+            "occasions",
+            "isFeatured"
         ];
 
         fields.forEach(field => {
@@ -213,6 +219,10 @@ const editProduct = async (req, res) => {
                 product[field] = req.body[field];
             }
         });
+
+        if (req.body.availableIn !== undefined) {
+            product.availableIn = JSON.parse(req.body.availableIn);
+        }
 
         // Update slug if name changes
         if (req.body.name) {

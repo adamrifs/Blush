@@ -5,7 +5,7 @@ const AdminSettings = require('../models/AdminSettings');
 const { sendEmail } = require('../config/emailSender');
 const Admin = require("../models/adminSchema");
 const firebaseAdmin = require("../config/firebaseAdmin");
-const { sendNewOrderEmail, sendOrderCancelledEmail, sendPaymentFailedEmail } = require("../services/notificationEmails");
+const { sendNewOrderEmail, sendOrderCancelledEmail, sendPaymentFailedEmail, sendOrderConfirmationToCustomer } = require("../services/notificationEmails");
 const { notifyAdmins } = require("../services/orderNotifications");
 const OrderNotification = require('../models/OrderNotification')
 
@@ -53,6 +53,21 @@ exports.createOrder = async (req, res) => {
 
     await order.save();
 
+    await order.populate("items.productId");
+    console.log("Card Message:", order.cardMessage);
+    const adminSettingsList = await AdminSettings.find({});
+
+    for (const settings of adminSettingsList) {
+      if (settings.emailEnabled && settings.email) {
+        await sendNewOrderEmail(settings.email, order);
+      }
+    }
+
+    const user = await User.findById(order.userId);
+
+    if (user?.email) {
+      await sendOrderConfirmationToCustomer(user.email, order);
+    }
     // ✅ DATABASE NOTIFICATION
     await OrderNotification.create({
       title: "New COD Order 💐",

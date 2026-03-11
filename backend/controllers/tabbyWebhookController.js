@@ -2,7 +2,10 @@ const axios = require("axios");
 const Order = require("../models/orderSchema");
 const Cart = require("../models/cartSchema");
 const { notifyAdmins } = require("../services/orderNotifications");
-const OrderNotification = require('../models/OrderNotification')
+const OrderNotification = require('../models/OrderNotification');
+const AdminSettings = require("../models/AdminSettings");
+const { sendOrderConfirmationToCustomer } = require("../services/notificationEmails");
+const User = require("../models/userSchema");
 
 exports.handleTabbyWebhook = async (req, res) => {
   try {
@@ -56,6 +59,22 @@ exports.handleTabbyWebhook = async (req, res) => {
     order.payment.amount = payment.amount.amount;
 
     await order.save();
+
+    await order.populate("items.productId");
+
+    const adminSettingsList = await AdminSettings.find({});
+
+    for (const settings of adminSettingsList) {
+      if (settings.emailEnabled && settings.email) {
+        await sendNewOrderEmail(settings.email, order);
+      }
+    }
+
+    const user = await User.findById(order.userId);
+
+    if (user?.email) {
+      await sendOrderConfirmationToCustomer(user.email, order);
+    }
 
     // 5️⃣ NOTIFICATIONS + CART CLEANUP
     await notifyAdmins(order, req.app);

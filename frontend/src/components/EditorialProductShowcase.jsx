@@ -3,14 +3,19 @@ import { ProductContext } from "../context/ProductContext";
 import { Link } from "react-router-dom";
 import { HiOutlineChevronRight } from "react-icons/hi2";
 import { motion } from "framer-motion";
+import { useMemo } from "react";
 
 const EditorialProductShowcase = () => {
   const { products } = useContext(ProductContext);
 
   if (!products?.length) return null;
+  
+  const shuffledProducts = useMemo(() => {
+    return [...products].sort(() => Math.random() - 0.5);
+  }, [products]);
 
-  const hero = products[23] || products[0];
-  const side = products.slice(1, 5);
+  const hero = shuffledProducts[0];
+  const side = shuffledProducts.slice(1, 5);
 
   const resolveImage = (img) => {
     if (!img) return "/placeholder.webp";
@@ -18,7 +23,7 @@ const EditorialProductShowcase = () => {
     return img;
   };
 
-  // 🔹 Animation variants
+  // Animation variants
   const container = {
     hidden: { opacity: 0 },
     show: {
