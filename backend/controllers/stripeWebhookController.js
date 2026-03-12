@@ -5,6 +5,7 @@ const { notifyAdmins } = require("../services/orderNotifications");
 const OrderNotification = require("../models/OrderNotification");
 const AdminSettings = require("../models/AdminSettings");
 const User = require("../models/userSchema");
+const { sendNewOrderEmail, sendOrderConfirmationToCustomer } = require("../services/notificationEmails");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -52,7 +53,11 @@ async function createOrderFromSession(session, req) {
     },
 
     totals: JSON.parse(session.metadata.totals),
-    cardMessage: JSON.parse(session.metadata.cardMessage),
+    cardMessage: {
+      option: session.metadata.cardOption,
+      messageText: session.metadata.cardText,
+      template: session.metadata.cardTemplate,
+    },
   });
 
   await order.save();

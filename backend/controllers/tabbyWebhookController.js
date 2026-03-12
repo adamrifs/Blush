@@ -4,7 +4,7 @@ const Cart = require("../models/cartSchema");
 const { notifyAdmins } = require("../services/orderNotifications");
 const OrderNotification = require('../models/OrderNotification');
 const AdminSettings = require("../models/AdminSettings");
-const { sendOrderConfirmationToCustomer } = require("../services/notificationEmails");
+const { sendOrderConfirmationToCustomer, sendNewOrderEmail } = require("../services/notificationEmails");
 const User = require("../models/userSchema");
 
 exports.handleTabbyWebhook = async (req, res) => {

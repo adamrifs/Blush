@@ -79,14 +79,16 @@ exports.createStripeSession = async (req, res) => {
 
       metadata: {
         userId,
-
-        // ✅ ADD SENDER HERE
         senderName,
         senderPhone,
 
         shipping: JSON.stringify(shipping),
         totals: JSON.stringify(totals),
-        cardMessage: JSON.stringify(cardMessage),
+
+        cardOption: cardMessage?.option || "",
+        cardText: cardMessage?.messageText?.slice(0, 500) || "",
+        cardTemplate: cardMessage?.template || "",
+
         cart: JSON.stringify(
           cart.map(item => ({
             productId: item.productId._id,

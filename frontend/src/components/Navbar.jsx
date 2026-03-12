@@ -61,7 +61,7 @@ const Navbar = () => {
   const handleUserAccount = () => {
     setUserAccount(!userAccount)
   }
-  console.log('filtered products>', filteredProducts)
+  // console.log('filtered products>', filteredProducts)
 
   const handleSelectProduct = (product) => {
     setShowSearch(false);
