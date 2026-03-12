@@ -83,7 +83,7 @@ const ProductContextProvider = (props) => {
         { params: { emirate }, showLoader: true, }
       );
       setProducts(response.data.products);
-      console.log("API products:", response.data.products.length)
+      // console.log("API products:", response.data.products.length)
     } catch (error) {
       toast.error("Failed to load products for selected emirate");
       console.log(error);
