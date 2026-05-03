@@ -6,7 +6,7 @@ const PaymentBadge = ({ method }) => {
     if (method === "cod") {
         return (
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
-                COD
+                {method}
             </span>
         );
     }
@@ -14,7 +14,7 @@ const PaymentBadge = ({ method }) => {
     if (method === "card" || method === "applepay") {
         return (
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                Paid
+                {method}
             </span>
         );
     }

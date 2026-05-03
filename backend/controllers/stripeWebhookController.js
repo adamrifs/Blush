@@ -16,7 +16,7 @@ async function createOrderFromSession(session, req) {
 
   // Prevent duplicate orders
   const existingOrder = await Order.findOne({
-    "payment.orderId": session.id,
+    "payment.transactionId": session.payment_intent,
   });
 
   if (existingOrder) {
@@ -121,30 +121,6 @@ exports.handleStripeWebhook = async (req, res) => {
       const session = event.data.object;
 
       await createOrderFromSession(session, req);
-    }
-
-    /* ===============================
-       PAYMENT INTENT SUCCEEDED
-    =============================== */
-    if (event.type === "payment_intent.succeeded") {
-
-      const paymentIntent = event.data.object;
-
-      console.log("💳 Payment Intent Succeeded:", paymentIntent.id);
-
-      // Retrieve checkout session using payment intent
-      const sessions = await stripe.checkout.sessions.list({
-        payment_intent: paymentIntent.id,
-      });
-
-      if (sessions.data.length > 0) {
-
-        const session = sessions.data[0];
-
-        await createOrderFromSession(session, req);
-      } else {
-        console.log("⚠️ No checkout session found for payment intent:", paymentIntent.id);
-      }
     }
 
   } catch (error) {

@@ -48,7 +48,7 @@ const Banner = () => {
   const settings = {
     dots: true,
     infinite: true,
-    speed: 1500, 
+    speed: 1500,
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
@@ -80,6 +80,9 @@ const Banner = () => {
 
   return (
     <section className="w-full px-4 md:px-10 mt-1 overflow-hidden">
+      <h1 className="sr-only">
+        Best Flowers Shop in Abu Dhabi with Fast Flower Delivery
+      </h1>
       <div className="w-full h-[65vh] md:h-[72vh] rounded-[40px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] relative group">
         <Slider {...settings}>
           {banners.map((item, i) => (
@@ -101,24 +104,24 @@ const Banner = () => {
               {/* CONTENT BOX: Center-Left Aligned */}
               <div className="absolute bottom-10 md:-left-10 flex items-center px-6 md:px-24">
                 <div className="max-w-[700px] animate-fadeIn">
-                  
-                    {item.subtitle && (
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="h-[1px] w-8 bg-[#b89bff]"></span>
-                        <span className="text-white/90 font-montserrat text-[10px] md:text-xs tracking-[0.4em] uppercase font-light">
-                          {item.subtitle}
-                        </span>
-                      </div>
-                    )}
 
-                    <h2 className="text-white font-chopard text-5xl md:text-8xl leading-tight mb-10 drop-shadow-2xl">
-                      {item.title} <br />
-                      <span className="italic font-light text-[#d6b8ff] opacity-90">{item.highlight}</span>
-                    </h2>
+                  {item.subtitle && (
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="h-[1px] w-8 bg-[#b89bff]"></span>
+                      <span className="text-white/90 font-montserrat text-[10px] md:text-xs tracking-[0.4em] uppercase font-light">
+                        {item.subtitle}
+                      </span>
+                    </div>
+                  )}
 
-                    <button
-                      onClick={gotoProductListing}
-                      className="
+                  <h2 className="text-white font-chopard text-5xl md:text-8xl leading-tight mb-10 drop-shadow-2xl">
+                    {item.title} <br />
+                    <span className="italic font-light text-[#d6b8ff] opacity-90">{item.highlight}</span>
+                  </h2>
+
+                  <button
+                    onClick={gotoProductListing}
+                    className="
                         group/btn relative
                         bg-white text-gray-900 
                         px-10 md:px-14 py-4 
@@ -130,16 +133,16 @@ const Banner = () => {
                         shadow-xl hover:shadow-[0_10px_30px_rgba(184,155,255,0.4)]
                         flex items-center gap-2
                       "
+                  >
+                    <span>Discover Collection</span>
+                    <svg
+                      className="w-4 h-4 transform transition-transform duration-300 group-hover/btn:translate-x-1"
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     >
-                      <span>Discover Collection</span>
-                      <svg 
-                        className="w-4 h-4 transform transition-transform duration-300 group-hover/btn:translate-x-1" 
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </button>
-                  
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </button>
+
                 </div>
               </div>
 

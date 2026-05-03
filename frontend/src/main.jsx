@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import ProductContextProvider from './context/ProductContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { LoaderProvider } from './context/LoaderContext.jsx'
+import { HelmetProvider } from "react-helmet-async";
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")
@@ -14,13 +15,15 @@ if ("serviceWorker" in navigator) {
 
 
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
-    <ProductContextProvider>
-      <ToastProvider>
-        <LoaderProvider>
-          <App />
-        </LoaderProvider>
-      </ToastProvider>
-    </ProductContextProvider>
-  </BrowserRouter>
+  <HelmetProvider>
+    <BrowserRouter>
+      <ProductContextProvider>
+        <ToastProvider>
+          <LoaderProvider>
+            <App />
+          </LoaderProvider>
+        </ToastProvider>
+      </ProductContextProvider>
+    </BrowserRouter>
+  </HelmetProvider>
 )
