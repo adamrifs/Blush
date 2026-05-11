@@ -147,7 +147,7 @@ ${exports.orderTable(order)}
 
 <p style="margin-top:14px">
   <strong>Delivery Date:</strong>
-  ${new Date(order.shipping.deliveryDate).toDateString()}<br/>
+  ${new Date(order.shipping.deliveryDate.split('T')[0] + "T00:00:00").toDateString()}<br/>
 
   <strong>Delivery Slot:</strong>
   ${order.shipping.deliverySlot?.title || "N/A"}

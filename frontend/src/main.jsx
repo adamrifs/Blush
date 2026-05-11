@@ -6,6 +6,11 @@ import ProductContextProvider from './context/ProductContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { LoaderProvider } from './context/LoaderContext.jsx'
 import { HelmetProvider } from "react-helmet-async";
+import setupLocatorUI from "@locator/runtime";
+
+if (process.env.NODE_ENV === "development") {
+  setupLocatorUI();
+}
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")

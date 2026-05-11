@@ -644,17 +644,21 @@ const AdminOrders = () => {
                                         )}
 
                                         {/* Message */}
-                                        {selectedOrder.cardMessage.messageHTML?.trim() === "" ? (
+                                        {!(selectedOrder.cardMessage.messageHTML?.trim() || selectedOrder.cardMessage.messageText?.trim()) ? (
                                             <p className="text-gray-400 text-base mt-5">
                                                 No message content
                                             </p>
-                                        ) : (
+                                        ) : selectedOrder.cardMessage.messageHTML ? (
                                             <div
                                                 className="text-gray-800 leading-relaxed text-base sm:text-[18px] break-words whitespace-pre-wrap"
                                                 dangerouslySetInnerHTML={{
                                                     __html: selectedOrder.cardMessage.messageHTML,
                                                 }}
                                             />
+                                        ) : (
+                                            <div className="text-gray-800 leading-relaxed text-base sm:text-[18px] break-words whitespace-pre-wrap">
+                                                {selectedOrder.cardMessage.messageText}
+                                            </div>
                                         )}
                                     </div>
                                 </div>

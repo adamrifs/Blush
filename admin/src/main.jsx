@@ -4,6 +4,11 @@ import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
 import { ProductProvider } from './context/ProductContext.jsx'
+import setupLocatorUI from "@locator/runtime";
+
+if (process.env.NODE_ENV === "development") {
+  setupLocatorUI();
+}
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
