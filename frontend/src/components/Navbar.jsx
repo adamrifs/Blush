@@ -66,7 +66,7 @@ const Navbar = () => {
   const handleSelectProduct = (product) => {
     setShowSearch(false);
     setQuery(product.name);
-    nav("/product-listing", { state: { selectedCategory: product } });
+    nav(`/product/${product.slug || product._id}`);
   };
 
   const handleQueryChange = (e) => {
